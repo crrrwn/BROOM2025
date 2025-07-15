@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = "https://uywvvasebsmhfknvqide.supabase.co"
-const supabaseAnonKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5d3Z2YXNlYnNtaGZrbnZxaWRlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2MzU2NDYsImV4cCI6MjA2NzIxMTY0Nn0.bvfUPm3PqnlTDzItB7hIHxebuysJTyr1HHNbHONER7E"
+// Replace with your actual Supabase URL and Anon Key
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -163,26 +163,24 @@ export const getUserOrders = async (userId) => {
 }
 
 export const getOrderById = async (orderId) => {
-  const { data, error } = await supabase
-    .from("orders")
-    .select(`
-      *,
-      services (name, description, category),
-      payments (*),
-      order_tracking (*)
-    `)
-    .eq("id", orderId)
-    .single()
+  console.log("Fetching order with ID:", orderId)
+  const { data, error } = await supabase.from("orders").select("*").eq("id", orderId).single()
+
+  if (error) {
+    console.error("Supabase error fetching order:", error)
+  } else if (!data) {
+    console.warn("No order found for ID:", orderId)
+  }
   return { data, error }
 }
 
-export const updateOrderStatus = async (orderId, status) => {
-  const { data, error } = await supabase
-    .from("orders")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", orderId)
-    .select()
-    .single()
+export const updateOrderStatus = async (orderId, newStatus) => {
+  console.log(`Updating order ${orderId} status to ${newStatus}`)
+  const { data, error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId).select()
+
+  if (error) {
+    console.error("Supabase error updating order status:", error)
+  }
   return { data, error }
 }
 
@@ -253,30 +251,22 @@ export const subscribeToChatMessages = (orderId, callback) => {
     .subscribe()
 }
 
-// Generic table subscription function
-export const subscribeToTable = (tableName, callback, filter = null) => {
-  const channel = supabase.channel(`${tableName}-changes`)
-
-  const subscription = channel.on(
-    "postgres_changes",
-    {
-      event: "*",
-      schema: "public",
-      table: tableName,
-      ...(filter && { filter }),
-    },
-    callback,
-  )
-
-  return subscription.subscribe()
+// Function to subscribe to real-time changes for a specific table
+export const subscribeToTable = (tableName, callback, filter = "") => {
+  const channel = supabase
+    .channel(`${tableName}_channel_${Math.random().toString(36).substring(7)}`) // Unique channel name
+    .on("postgres_changes", { event: "*", schema: "public", table: tableName, filter: filter }, (payload) => {
+      callback(payload)
+    })
+    .subscribe()
+  return channel
 }
 
-// Unsubscribe function
-export const unsubscribe = (subscription) => {
-  if (subscription && typeof subscription.unsubscribe === "function") {
-    return subscription.unsubscribe()
+// Function to unsubscribe from a channel
+export const unsubscribe = (channel) => {
+  if (channel) {
+    supabase.removeChannel(channel)
   }
-  return Promise.resolve()
 }
 
 // File upload functions

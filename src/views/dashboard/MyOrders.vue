@@ -649,6 +649,28 @@ export default {
           'package_description', 'special_instructions', 'form_submitted_at'
         ];
 
+        // Helper function to handle file paths with public URLs
+        const handleFilePath = (filePath, label) => {
+          if (!filePath) return '';
+          
+          try {
+            const { data } = supabase.storage.from('payment-proofs').getPublicUrl(filePath);
+            if (data && data.publicUrl) {
+              const isImage = filePath.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/);
+              if (isImage) {
+                return `<div class="mt-2"><strong>${label}:</strong><br><img src="${data.publicUrl}" alt="${label}" class="mt-2 max-w-xs rounded-lg border shadow-sm cursor-pointer" onclick="window.open('${data.publicUrl}', '_blank')" style="max-height: 200px; object-fit: contain;"></div>`;
+              } else {
+                return `<p><strong>${label}:</strong> <a href="${data.publicUrl}" target="_blank" class="text-blue-600 hover:underline">View File</a></p>`;
+              }
+            } else {
+              return `<p><strong>${label}:</strong> File not available</p>`;
+            }
+          } catch (error) {
+            console.error('Error getting public URL:', error);
+            return `<p><strong>${label}:</strong> File not available</p>`;
+          }
+        };
+
         switch (serviceType) {
           case 'food_delivery':
             if (parsed.restaurant) formattedDetails += `<p><strong>Restaurant:</strong> ${parsed.restaurant}</p>`;
@@ -657,6 +679,9 @@ export default {
             if (parsed.estimated_amount) formattedDetails += `<p><strong>Estimated Amount:</strong> ₱${parsed.estimated_amount.toLocaleString()}</p>`;
             if (parsed.restaurant_contact) formattedDetails += `<p><strong>Restaurant Contact:</strong> ${parsed.restaurant_contact}</p>`;
             if (parsed.food_notes) formattedDetails += `<p><strong>Special Instructions:</strong> ${parsed.food_notes}</p>`;
+            if (parsed.payment_proof_path) {
+              formattedDetails += handleFilePath(parsed.payment_proof_path, 'Payment Proof');
+            }
             break;
 
           case 'bill_payments':
@@ -665,23 +690,23 @@ export default {
             if (parsed.bill_amount) formattedDetails += `<p><strong>Amount to Pay:</strong> ₱${parsed.bill_amount.toLocaleString()}</p>`;
             if (parsed.due_date) formattedDetails += `<p><strong>Due Date:</strong> ${new Date(parsed.due_date).toLocaleDateString()}</p>`;
             if (parsed.reference_file_path) {
-              const { data } = supabase.storage.from('payment-proofs').getPublicUrl(parsed.reference_file_path);
-              if (data && data.publicUrl) {
-                formattedDetails += `<p><strong>Bill Statement:</strong> <a href="${data.publicUrl}" target="_blank" class="text-blue-600 hover:underline">View File</a></p>`;
-              } else {
-                formattedDetails += `<p><strong>Bill Statement:</strong> File not available or bucket not found.</p>`;
-              }
+              formattedDetails += handleFilePath(parsed.reference_file_path, 'Bill Statement');
             }
             if (parsed.reference_number) formattedDetails += `<p><strong>Reference Number:</strong> ${parsed.reference_number}</p>`;
+            if (parsed.payment_proof_path) {
+              formattedDetails += handleFilePath(parsed.payment_proof_path, 'Payment Proof');
+            }
             break;
 
           case 'pickup_drop':
-            // pickup_address and dropoff_address are already displayed outside
             if (parsed.pickup_contact) formattedDetails += `<p><strong>Pickup Contact:</strong> ${parsed.pickup_contact}</p>`;
             if (parsed.dropoff_contact) formattedDetails += `<p><strong>Drop-off Contact:</strong> ${parsed.dropoff_contact}</p>`;
             if (parsed.item_type) formattedDetails += `<p><strong>Item Type:</strong> ${formatKey(parsed.item_type)}</p>`;
             if (parsed.item_details) formattedDetails += `<p><strong>Item Details:</strong> ${parsed.item_details}</p>`;
             if (parsed.delivery_notes) formattedDetails += `<p><strong>Special Instructions:</strong> ${parsed.delivery_notes}</p>`;
+            if (parsed.payment_proof_path) {
+              formattedDetails += handleFilePath(parsed.payment_proof_path, 'Payment Proof');
+            }
             break;
 
           case 'gift_delivery':
@@ -694,6 +719,9 @@ export default {
             if (parsed.gift_message) formattedDetails += `<p><strong>Gift Message:</strong> ${parsed.gift_message}</p>`;
             if (parsed.delivery_schedule) formattedDetails += `<p><strong>Delivery Schedule:</strong> ${new Date(parsed.delivery_schedule).toLocaleString()}</p>`;
             formattedDetails += `<p><strong>Surprise Delivery:</strong> ${parsed.is_surprise ? 'Yes' : 'No'}</p>`;
+            if (parsed.payment_proof_path) {
+              formattedDetails += handleFilePath(parsed.payment_proof_path, 'Payment Proof');
+            }
             break;
 
           case 'medicine_delivery':
@@ -701,15 +729,13 @@ export default {
             if (parsed.medicine_list) formattedDetails += `<p><strong>Medicine List:</strong> ${parsed.medicine_list}</p>`;
             formattedDetails += `<p><strong>Prescription Required:</strong> ${parsed.needs_prescription ? 'Yes' : 'No'}</p>`;
             if (parsed.prescription_file_path) {
-              const { data } = supabase.storage.from('payment-proofs').getPublicUrl(parsed.prescription_file_path);
-              if (data && data.publicUrl) {
-                formattedDetails += `<p><strong>Prescription:</strong> <a href="${data.publicUrl}" target="_blank" class="text-blue-600 hover:underline">View File</a></p>`;
-              } else {
-                formattedDetails += `<p><strong>Prescription:</strong> File not available or bucket not found.</p>`;
-              }
+              formattedDetails += handleFilePath(parsed.prescription_file_path, 'Prescription');
             }
             if (parsed.patient_name) formattedDetails += `<p><strong>Patient Name:</strong> ${parsed.patient_name}</p>`;
             if (parsed.estimated_cost) formattedDetails += `<p><strong>Estimated Cost:</strong> ₱${parsed.estimated_cost.toLocaleString()}</p>`;
+            if (parsed.payment_proof_path) {
+              formattedDetails += handleFilePath(parsed.payment_proof_path, 'Payment Proof');
+            }
             break;
 
           case 'grocery':
@@ -719,6 +745,9 @@ export default {
             if (parsed.exact_budget && parsed.exact_budget > 0) formattedDetails += `<p><strong>Exact Budget:</strong> ₱${parsed.exact_budget.toLocaleString()}</p>`;
             if (parsed.brand_preferences) formattedDetails += `<p><strong>Brand Preferences:</strong> ${parsed.brand_preferences}</p>`;
             if (parsed.delivery_instructions) formattedDetails += `<p><strong>Special Instructions:</strong> ${parsed.delivery_instructions}</p>`;
+            if (parsed.payment_proof_path) {
+              formattedDetails += handleFilePath(parsed.payment_proof_path, 'Payment Proof');
+            }
             break;
 
           default:
@@ -738,22 +767,18 @@ export default {
                     displayValue = `₱${value.toLocaleString()}`;
                   }
                 } else if (key.includes('_path')) {
-                  const { data } = supabase.storage.from('payment-proofs').getPublicUrl(value);
-                  if (data && data.publicUrl) {
-                    displayValue = `<a href="${data.publicUrl}" target="_blank" class="text-blue-600 hover:underline">View File</a>`;
-                  } else {
-                    displayValue = `File not available or bucket not found.`;
-                  }
+                  formattedDetails += handleFilePath(value, formatKey(key));
+                  return;
                 }
                 formattedDetails += `<p><strong>${formatKey(key)}:</strong> ${displayValue}</p>`;
               });
         }
 
-        formattedDetails += `</div>`; // Close the div opened at the beginning
+        formattedDetails += `</div>`;
         return formattedDetails;
       } catch (e) {
         console.error("Error parsing service details:", e);
-        return `<p>${details}</p>`; // Fallback to raw details if parsing fails
+        return `<p>${details}</p>`;
       }
     };
 
@@ -1073,8 +1098,8 @@ export default {
       chatbotMessages,
       chatbotInput,
       rating,
-      getDisplayServiceType, // Updated to use the new function
-      getDisplayPaymentMethod, // Updated to use the new function
+      getDisplayServiceType,
+      getDisplayPaymentMethod,
       formatStatus,
       formatDate,
       formatServiceDetails,
