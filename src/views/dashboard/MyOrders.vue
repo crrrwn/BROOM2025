@@ -18,7 +18,7 @@
             <button
               v-for="tab in tabs"
               :key="tab.key"
-              @click="activeTab = tab.key"
+              @click="activeTab = tab.key; currentPage = 1"
               :class="[
                 activeTab === tab.key
                   ? 'border-green-500 text-green-600'
@@ -38,7 +38,7 @@
 
     <!-- Orders List -->
     <div class="space-y-6">
-      <div v-if="filteredOrders.length === 0" class="bg-white rounded-2xl p-12 shadow-sm border text-center">
+      <div v-if="paginatedOrders.length === 0" class="bg-white rounded-2xl p-12 shadow-sm border text-center">
         <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
           <svg class="h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -54,7 +54,7 @@
         </router-link>
       </div>
 
-      <div v-for="order in filteredOrders" :key="order.id" class="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
+      <div v-for="order in paginatedOrders" :key="order.id" class="bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
             <div class="flex items-center">
@@ -82,22 +82,20 @@
             <h4 class="font-semibold text-gray-900 mb-3">Order Timeline</h4>
             <div class="flex items-center justify-between text-sm">
               <div v-for="(step, index) in orderSteps" :key="step.key" class="flex items-center">
-                <div class="flex items-center">
-                  <div :class="[
-                    'w-8 h-8 rounded-full flex items-center justify-center',
-                    getStepStatus(order.status, step.key) === 'completed' ? 'bg-green-600 text-white' :
-                    getStepStatus(order.status, step.key) === 'current' ? 'bg-blue-600 text-white' :
-                    'bg-gray-200 text-gray-400'
-                  ]">
-                    <svg v-if="getStepStatus(order.status, step.key) === 'completed'" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    <span v-else class="text-xs">{{ index + 1 }}</span>
-                  </div>
-                  <span class="ml-2 text-gray-700 font-medium">{{ step.label }}</span>
+                <div :class="[
+                  'w-8 h-8 rounded-full flex items-center justify-center',
+                  getStepStatus(order.status, step.key) === 'completed' ? 'bg-green-600 text-white' :
+                  getStepStatus(order.status, step.key) === 'current' ? 'bg-blue-600 text-white' :
+                  'bg-gray-200 text-gray-400'
+                ]">
+                  <svg v-if="getStepStatus(order.status, step.key) === 'completed'" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                  <span v-else class="text-xs">{{ index + 1 }}</span>
                 </div>
-                <div v-if="index < orderSteps.length - 1" class="flex-1 h-0.5 bg-gray-200 mx-4"></div>
+                <span class="ml-2 text-gray-700 font-medium">{{ step.label }}</span>
               </div>
+              <div v-if="index < orderSteps.length - 1" class="flex-1 h-0.5 bg-gray-200 mx-4"></div>
             </div>
           </div>
 
@@ -142,6 +140,7 @@
           <!-- Action Buttons -->
           <div class="flex flex-wrap gap-3">
             <router-link
+              v-if="order.status !== 'cancelled'"
               :to="{ name: 'OrderTracking', params: { id: order.id } }"
               class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm rounded-xl hover:bg-blue-700 transition-colors font-semibold"
             >
@@ -152,6 +151,7 @@
             </router-link>
 
             <button
+              v-if="order.status !== 'cancelled'"
               @click="showBarcode(order)"
               class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-xl hover:bg-gray-700 transition-colors font-semibold"
             >
@@ -211,38 +211,52 @@
               class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition-colors font-semibold"
             >
               <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364-.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364-.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0114 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
               </svg>
               Order Assistant
-            </button>
-
-            <button
-              @click="toggleFavorite(order)"
-              :class="[
-                'inline-flex items-center px-4 py-2 text-sm rounded-xl transition-colors font-semibold',
-                isFavorite(order) 
-                  ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              ]"
-            >
-              <svg class="h-4 w-4 mr-2" :fill="isFavorite(order) ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-              </svg>
-              {{ isFavorite(order) ? 'Favorited' : 'Add to Favorites' }}
             </button>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Pagination Controls -->
+    <div v-if="totalPages > 1" class="mt-6 flex justify-center items-center space-x-2">
+      <button
+        @click="prevPage"
+        :disabled="currentPage === 1"
+        class="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Previous
+      </button>
+      <button
+        v-for="page in totalPages"
+        :key="page"
+        @click="goToPage(page)"
+        :class="[
+          'px-4 py-2 rounded-xl font-semibold',
+          currentPage === page ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+        ]"
+      >
+        {{ page }}
+      </button>
+      <button
+        @click="nextPage"
+        :disabled="currentPage === totalPages"
+        class="px-4 py-2 border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Next
+      </button>
+    </div>
+
     <!-- Barcode Modal -->
     <div v-if="showBarcodeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl overflow-y-auto max-h-[90vh]">
         <h3 class="text-xl font-bold text-gray-900 mb-4">Order Barcode</h3>
         
         <div class="text-center mb-6">
           <div class="bg-gray-100 p-4 rounded-xl mb-4">
-            <div class="barcode-container" id="barcode-display"></div>
+            <div class="barcode-container w-full" id="barcode-display"></div>
           </div>
           <p class="text-sm text-gray-600">Show this barcode to your delivery driver</p>
           <p class="text-xs text-gray-500 mt-2">Order #{{ selectedOrderForBarcode?.id }}</p>
@@ -380,7 +394,6 @@ export default {
     
     const activeTab = ref('all')
     const orders = ref([])
-    const favorites = ref([])
     const drivers = ref([])
     const driverLocations = ref([])
     const showRatingModal = ref(false)
@@ -396,6 +409,10 @@ export default {
       feedback: ''
     })
 
+    // Pagination state
+    const itemsPerPage = ref(3)
+    const currentPage = ref(1)
+
     let ordersSubscription = null
     let driversSubscription = null
     let locationsSubscription = null
@@ -408,7 +425,8 @@ export default {
       { key: 'cancelled', label: 'Cancelled', count: orders.value.filter(o => o.status === 'cancelled').length }
     ])
 
-    const filteredOrders = computed(() => {
+    // Intermediate computed property for filtering by tab
+    const tabFilteredOrders = computed(() => {
       switch (activeTab.value) {
         case 'active':
           return orders.value.filter(order => ['pending', 'assigned', 'picked_up', 'in_transit'].includes(order.status))
@@ -421,10 +439,37 @@ export default {
       }
     })
 
+    // Final computed property for paginated orders
+    const paginatedOrders = computed(() => {
+      const start = (currentPage.value - 1) * itemsPerPage.value
+      const end = start + itemsPerPage.value
+      return tabFilteredOrders.value.slice(start, end)
+    })
+
+    const totalPages = computed(() => {
+      return Math.ceil(tabFilteredOrders.value.length / itemsPerPage.value)
+    })
+
+    const nextPage = () => {
+      if (currentPage.value < totalPages.value) {
+        currentPage.value++
+      }
+    }
+
+    const prevPage = () => {
+      if (currentPage.value > 1) {
+        currentPage.value--
+      }
+    }
+
+    const goToPage = (page) => {
+      currentPage.value = page
+    }
+
     const orderSteps = [
       { key: 'pending', label: 'Placed' },
       { key: 'assigned', label: 'Assigned' },
-      { key: 'picked_up', label: 'Picked Up' },
+      { key: 'picked_up', 'label': 'Picked Up' },
       { key: 'in_transit', label: 'In Transit' },
       { key: 'delivered', label: 'Delivered' }
     ]
@@ -445,6 +490,8 @@ export default {
         } else {
           orders.value = data || []
           setupCancelTimers()
+          // Reset current page to 1 when orders are reloaded or filtered
+          currentPage.value = 1
         }
       } catch (error) {
         console.error('Error loading orders:', error)
@@ -481,25 +528,6 @@ export default {
         }
       } catch (error) {
         console.error('Error loading driver locations:', error)
-      }
-    }
-
-    const loadFavorites = async () => {
-      if (!currentUser.value) return
-
-      try {
-        const { data, error } = await supabase
-          .from('user_favorites')
-          .select('order_id')
-          .eq('user_id', currentUser.value.id)
-
-        if (error) {
-          console.error('Error loading favorites:', error)
-        } else {
-          favorites.value = data?.map(f => f.order_id) || []
-        }
-      } catch (error) {
-        console.error('Error loading favorites:', error)
       }
     }
 
@@ -837,26 +865,62 @@ export default {
       return order.driver_id && ['assigned', 'picked_up', 'in_transit', 'delivered'].includes(order.status)
     }
 
-    const isFavorite = (order) => {
-      return favorites.value.includes(order.id)
-    }
-
     const showBarcode = async (order) => {
       selectedOrderForBarcode.value = order
       showBarcodeModal.value = true
       
-      await nextTick()
-      
+      await nextTick() // Ensure modal is rendered and DOM is updated
+
+      const barcodeDisplayElement = document.getElementById('barcode-display');
+      if (!barcodeDisplayElement) {
+        console.error('[MyOrders.vue] Barcode display element not found in DOM. Cannot render barcode.');
+        toast.error('Failed to generate barcode: Display area missing.');
+        return;
+      }
+
+      // Clear any previous barcode content to ensure a fresh render
+      barcodeDisplayElement.innerHTML = '';
+
+      if (!selectedOrderForBarcode.value || selectedOrderForBarcode.value.id === undefined || selectedOrderForBarcode.value.id === null) {
+        console.error('[MyOrders.vue] Cannot generate barcode: Selected order or its ID is invalid.', selectedOrderForBarcode.value);
+        toast.error('Failed to generate barcode: Invalid order data.');
+        // Display a fallback message in the modal
+        barcodeDisplayElement.innerHTML = `<p class="text-red-500">Error: Invalid Order ID for barcode.</p>`;
+        return;
+      }
+
+      const orderId = selectedOrderForBarcode.value.id;
+      console.log(`[MyOrders.vue] Attempting to generate barcode for Order ID: ${orderId}`);
+
       try {
-        const barcode = generateOrderBarcode(order.id)
-        createBarcodeElement(barcode, 'barcode-display', {
-          width: 250,
+        // generateOrderBarcode ensures the ID is a string
+        const barcodeValue = generateOrderBarcode(orderId);
+        console.log(`[MyOrders.vue] Generated barcode value: "${barcodeValue}"`);
+
+        if (!barcodeValue || typeof barcodeValue !== 'string' || barcodeValue.trim() === '') {
+          console.error('[MyOrders.vue] Generated barcode value is empty or invalid. Cannot render barcode:', barcodeValue);
+          toast.error('Failed to generate barcode: Invalid barcode value.');
+          // Display a fallback message in the modal
+          barcodeDisplayElement.innerHTML = `<p class="text-red-500">Error: Barcode value is empty or invalid for Order ID: ${orderId}.</p>`;
+          return;
+        }
+
+        // createBarcodeElement handles rendering to the 'barcode-display' div
+        createBarcodeElement(barcodeValue, 'barcode-display', {
+          width: 250, // This width is for JsBarcode's internal calculation, not the final SVG width
           height: 80,
           showText: true
-        })
+        });
+        // If we reach here, it means createBarcodeElement did not throw an error
+        // and should have either rendered the barcode or its SVG fallback.
+        console.log(`[MyOrders.vue] Barcode rendering attempt completed for Order ID: ${orderId}. Please check the modal for display.`);
+
       } catch (error) {
-        console.error('Error generating barcode:', error)
-        toast.error('Failed to generate barcode')
+        // This catch block will be hit if createBarcodeElement itself throws an uncaught error.
+        console.error('[MyOrders.vue] An unexpected error occurred during barcode generation or rendering:', error);
+        toast.error('Failed to generate barcode. Please check console for details.');
+        // Display a fallback message in the modal
+        barcodeDisplayElement.innerHTML = `<p class="text-red-500">Failed to generate barcode for Order ID: ${orderId}. See console for details.</p>`;
       }
     }
 
@@ -1020,52 +1084,10 @@ export default {
       })
     }
 
-    const toggleFavorite = async (order) => {
-      try {
-        if (isFavorite(order)) {
-          const { error } = await supabase
-            .from('user_favorites')
-            .delete()
-            .eq('user_id', currentUser.value.id)
-            .eq('order_id', order.id)
-
-          if (error) {
-            toast.error('Failed to remove from favorites')
-          } else {
-            favorites.value = favorites.value.filter(id => id !== order.id)
-            toast.success('Removed from favorites')
-          }
-        } else {
-          const { error } = await supabase
-            .from('user_favorites')
-            .insert([
-              {
-                user_id: currentUser.value.id,
-                order_id: order.id,
-                service_type: order.service_type,
-                service_details: order.service_details,
-                created_at: new Date().toISOString()
-              }
-            ])
-
-          if (error) {
-            toast.error('Failed to add to favorites')
-          } else {
-            favorites.value.push(order.id)
-            toast.success('Added to favorites')
-          }
-        }
-      } catch (error) {
-        console.error('Toggle favorite error:', error)
-        toast.error('Failed to update favorites')
-      }
-    }
-
     onMounted(() => {
       loadOrders()
       loadDrivers()
       loadDriverLocations()
-      loadFavorites()
       setupRealtimeSubscriptions()
     })
 
@@ -1088,7 +1110,12 @@ export default {
     return {
       activeTab,
       tabs,
-      filteredOrders,
+      paginatedOrders,
+      totalPages,
+      currentPage,
+      nextPage,
+      prevPage,
+      goToPage,
       orderSteps,
       showRatingModal,
       showBarcodeModal,
@@ -1113,7 +1140,6 @@ export default {
       canRateOrder,
       canChatWithDriver,
       showOrderChatbot,
-      isFavorite,
       showBarcode,
       downloadBarcode,
       openOrderChatbot,
@@ -1123,7 +1149,6 @@ export default {
       openRatingModal,
       submitRating,
       chatWithDriver,
-      toggleFavorite
     }
   }
 }

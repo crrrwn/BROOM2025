@@ -1,142 +1,169 @@
-// Barcode generation and validation utilities
-import { supabase } from "@/lib/supabase"
+import JsBarcode from "jsbarcode"
+import { supabase } from "@/lib/supabase" // Corrected import path
 
+/**
+ * Generates a barcode value from an order ID.
+ * Uses a custom BROOM format with timestamp and padded orderId.
+ * @param {string|number} orderId
+ * @returns {string} The barcode value.
+ */
 export const generateOrderBarcode = (orderId) => {
-  // Generate a simple barcode format: BROOM + timestamp + orderId
   const timestamp = Date.now().toString().slice(-6)
   const paddedOrderId = orderId.toString().padStart(4, "0")
   return `BROOM${timestamp}${paddedOrderId}`
 }
 
+/**
+ * Validates the custom BROOM barcode format.
+ * @param {string} barcode
+ * @returns {boolean} True if the barcode matches the format, false otherwise.
+ */
 export const validateBarcode = (barcode) => {
-  // Validate barcode format
   const pattern = /^BROOM\d{6}\d{4}$/
   return pattern.test(barcode)
 }
 
+/**
+ * Extracts the order ID from a custom BROOM barcode.
+ * @param {string} barcode
+ * @returns {number} The extracted order ID.
+ * @throws {Error} If the barcode format is invalid.
+ */
 export const extractOrderIdFromBarcode = (barcode) => {
   if (!validateBarcode(barcode)) {
     throw new Error("Invalid barcode format")
   }
-
-  // Extract the numeric part after 'BROOM'
+  // Extract the numeric part after 'BROOM' (first 4 digits after BROOM)
   return Number.parseInt(barcode.substring(5, 9), 10)
 }
 
-export const generateBarcodeImage = (barcode, options = {}) => {
-  const {
-    width = 200,
-    height = 50,
-    fontSize = 12,
-    showText = true,
-    backgroundColor = "#ffffff",
-    foregroundColor = "#000000",
-  } = options
+/**
+ * Generates a barcode image (SVG) and appends it to a specified DOM element.
+ * Provides a fallback SVG if JsBarcode fails or barcodeValue is invalid.
+ * @param {string} barcodeValue The value to encode in the barcode.
+ * @param {string} elementId The ID of the DOM element to append the barcode to.
+ * @param {object} options JsBarcode options.
+ */
+export function createBarcodeElement(barcodeValue, elementId, options = {}) {
+  const element = document.getElementById(elementId)
+  if (!element) {
+    console.error(`[barcode.js] Target element with ID "${elementId}" not found.`)
+    return
+  }
 
-  // Create canvas element
+  // Clear previous content
+  element.innerHTML = ""
+
+  if (!barcodeValue || typeof barcodeValue !== "string" || barcodeValue.trim() === "") {
+    console.error(`[barcode.js] Invalid barcode value provided: "${barcodeValue}"`)
+    // Display a simple error message as SVG fallback
+    const errorSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    errorSvg.setAttribute("width", options.width || "250")
+    errorSvg.setAttribute("height", options.height || "80")
+    errorSvg.setAttribute("viewBox", `0 0 ${options.width || 250} ${options.height || 80}`)
+    errorSvg.innerHTML = `
+      <rect x="0" y="0" width="100%" height="100%" fill="#f8d7da" stroke="#dc3545" stroke-width="2"/>
+      <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="#dc3545">
+        Error generating barcode
+      </text>
+      <text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="12" fill="#dc3545">
+        Value: ${barcodeValue || "N/A"}
+      </text>
+    `
+    element.appendChild(errorSvg)
+    return
+  }
+
+  try {
+    const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    // Set width to 100% to make it responsive to its container
+    svgElement.setAttribute("width", "100%")
+    svgElement.setAttribute("height", options.height || "80") // Maintain aspect ratio or fixed height
+
+    JsBarcode(svgElement, barcodeValue, {
+      format: "CODE128", // Use Code 128 for alphanumeric data
+      displayValue: options.showText !== false, // Default to true
+      width: options.barWidth || 2, // Width of a single bar (default 2px)
+      height: options.height || 80, // Height of the barcode (default 80px)
+      textMargin: options.textMargin || 5,
+      fontSize: options.fontSize || 16,
+      background: options.backgroundColor || "#f3f4f6", // bg-gray-100
+      lineColor: options.foregroundColor || "#1f2937", // text-gray-900
+      margin: options.margin || 10, // Overall margin around the barcode
+      xmlDocument: document, // Important for SVG rendering in some environments
+    })
+    element.appendChild(svgElement)
+    console.log(`[barcode.js] Barcode successfully rendered to SVG for value: "${barcodeValue}"`)
+  } catch (error) {
+    console.error(`[barcode.js] Failed to render barcode to SVG for value "${barcodeValue}":`, error)
+    // Fallback to a simpler error message if JsBarcode itself fails
+    const errorSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+    errorSvg.setAttribute("width", options.width || "250")
+    errorSvg.setAttribute("height", options.height || "80")
+    errorSvg.setAttribute("viewBox", `0 0 ${options.width || 250} ${options.height || 80}`)
+    errorSvg.innerHTML = `
+      <rect x="0" y="0" width="100%" height="100%" fill="#f8d7da" stroke="#dc3545" stroke-width="2"/>
+      <text x="50%" y="40%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="14" fill="#dc3545">
+        Rendering Failed
+      </text>
+      <text x="50%" y="65%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="12" fill="#dc3545">
+        Value: ${barcodeValue || "N/A"}
+      </text>
+    `
+    element.appendChild(errorSvg)
+  }
+}
+
+/**
+ * Downloads the barcode image as a PNG.
+ * @param {string} barcodeValue The value encoded in the barcode.
+ * @param {string} filename The desired filename for the downloaded image.
+ * @param {object} options JsBarcode options.
+ */
+export const downloadBarcodeImage = (barcodeValue, filename = "barcode.png", options = {}) => {
   const canvas = document.createElement("canvas")
-  const ctx = canvas.getContext("2d")
-
-  canvas.width = width
-  canvas.height = height
-
-  // Fill background
-  ctx.fillStyle = backgroundColor
-  ctx.fillRect(0, 0, width, height)
-
-  // Generate barcode pattern (Code 128 simplified)
-  const barcodePattern = generateBarcodePattern(barcode)
-
-  // Draw barcode bars
-  ctx.fillStyle = foregroundColor
-  const barWidth = (width - 40) / barcodePattern.length
-  const barHeight = showText ? height - 20 : height - 10
-
-  barcodePattern.forEach((bar, index) => {
-    if (bar === "1") {
-      const x = 20 + index * barWidth
-      ctx.fillRect(x, 5, barWidth, barHeight)
-    }
+  JsBarcode(canvas, barcodeValue, {
+    format: "CODE128",
+    displayValue: options.showText !== false,
+    width: options.barWidth || 2,
+    height: options.height || 80,
+    textMargin: options.textMargin || 5,
+    fontSize: options.fontSize || 16,
+    background: options.backgroundColor || "#f3f4f6",
+    lineColor: options.foregroundColor || "#1f2937",
+    margin: options.margin || 10,
+    ...options,
   })
 
-  // Draw text if enabled
-  if (showText) {
-    ctx.fillStyle = foregroundColor
-    ctx.font = `${fontSize}px monospace`
-    ctx.textAlign = "center"
-    ctx.fillText(barcode, width / 2, height - 5)
-  }
-
-  return canvas.toDataURL("image/png")
-}
-
-const generateBarcodePattern = (barcode) => {
-  // Simplified barcode pattern generation
-  // In a real implementation, you'd use proper Code 128 encoding
-  const patterns = {
-    B: "11010010000",
-    R: "11010000100",
-    O: "11001101100",
-    M: "11001100110",
-    0: "10010011000",
-    1: "10010001100",
-    2: "10001001100",
-    3: "10011001000",
-    4: "10011000100",
-    5: "10001100100",
-    6: "11001001000",
-    7: "11001000100",
-    8: "10010000100",
-    9: "10001001000",
-  }
-
-  let pattern = "11010010000" // Start pattern
-
-  for (const char of barcode) {
-    pattern += patterns[char] || patterns["0"]
-  }
-
-  pattern += "1100011101011" // Stop pattern
-
-  return pattern
-}
-
-export const createBarcodeElement = (barcode, containerId, options = {}) => {
-  const container = document.getElementById(containerId)
-  if (!container) {
-    throw new Error(`Container with ID '${containerId}' not found`)
-  }
-
-  const img = document.createElement("img")
-  img.src = generateBarcodeImage(barcode, options)
-  img.alt = `Barcode: ${barcode}`
-  img.style.maxWidth = "100%"
-  img.style.height = "auto"
-
-  container.innerHTML = ""
-  container.appendChild(img)
-
-  return img
-}
-
-export const downloadBarcodeImage = (barcode, filename, options = {}) => {
-  const imageDataUrl = generateBarcodeImage(barcode, options)
-
   const link = document.createElement("a")
-  link.download = filename || `barcode-${barcode}.png`
-  link.href = imageDataUrl
-
+  link.download = filename
+  link.href = canvas.toDataURL("image/png")
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
 }
 
+/**
+ * Prints the order barcode.
+ * @param {string} barcode The barcode value to print.
+ * @param {object} options JsBarcode options.
+ */
 export const printOrderBarcode = (barcode, options = {}) => {
-  const imageDataUrl = generateBarcodeImage(barcode, {
+  const canvas = document.createElement("canvas")
+  JsBarcode(canvas, barcode, {
+    format: "CODE128",
+    displayValue: true,
+    width: 2, // Default bar width for print
+    height: 100, // Default height for print
+    textMargin: 5,
+    fontSize: 18,
+    background: "#ffffff",
+    lineColor: "#000000",
+    margin: 20,
     ...options,
-    width: 400,
-    height: 100,
   })
+
+  const imageDataUrl = canvas.toDataURL("image/png")
 
   const printWindow = window.open("", "_blank")
   printWindow.document.write(`
@@ -194,6 +221,9 @@ export const printOrderBarcode = (barcode, options = {}) => {
   printWindow.document.close()
   printWindow.focus()
 }
+
+// The following functions are not directly related to barcode image generation
+// but are kept as they might be used elsewhere in the application.
 
 export const scanBarcode = async () => {
   // This would integrate with a barcode scanning library like QuaggaJS
@@ -258,17 +288,6 @@ export const generateQRCode = async (orderId, orderData) => {
   }
 }
 
-const drawFinderPattern = (ctx, x, y, moduleSize) => {
-  // Draw 7x7 finder pattern
-  for (let i = 0; i < 7; i++) {
-    for (let j = 0; j < 7; j++) {
-      if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
-        ctx.fillRect(x + i * moduleSize, y + j * moduleSize, moduleSize, moduleSize)
-      }
-    }
-  }
-}
-
 export const createOrderQRCode = (orderId, userInfo) => {
   const qrData = JSON.stringify({
     type: "quickserve_order",
@@ -297,92 +316,4 @@ export const getBarcodeInfo = (barcode) => {
     timestamp,
     generatedAt: new Date(Number.parseInt(timestamp + "000")),
   }
-}
-
-export const generateBarcode = (data) => {
-  return new Promise((resolve, reject) => {
-    try {
-      // Create canvas element
-      const canvas = document.createElement("canvas")
-      const ctx = canvas.getContext("2d")
-
-      // Set canvas dimensions
-      canvas.width = 300
-      canvas.height = 100
-
-      // Fill white background
-      ctx.fillStyle = "white"
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      // Generate simple barcode pattern
-      const barcodeData = `ORDER-${data}`
-      const barWidth = 2
-      const barHeight = 60
-      const startX = 20
-      const startY = 20
-
-      // Create barcode pattern based on data
-      ctx.fillStyle = "black"
-      for (let i = 0; i < barcodeData.length; i++) {
-        const charCode = barcodeData.charCodeAt(i)
-        const pattern = charCode % 8 // Simple pattern generation
-
-        for (let j = 0; j < 8; j++) {
-          if ((pattern >> j) & 1) {
-            const x = startX + (i * 8 + j) * barWidth
-            ctx.fillRect(x, startY, barWidth, barHeight)
-          }
-        }
-      }
-
-      // Add text below barcode
-      ctx.fillStyle = "black"
-      ctx.font = "12px Arial"
-      ctx.textAlign = "center"
-      ctx.fillText(barcodeData, canvas.width / 2, startY + barHeight + 20)
-
-      // Convert to data URL
-      const dataURL = canvas.toDataURL("image/png")
-      resolve(dataURL)
-    } catch (error) {
-      // Fallback SVG barcode
-      const svgBarcode = `
-        <svg width="300" height="100" xmlns="http://www.w3.org/2000/svg">
-          <rect width="300" height="100" fill="white"/>
-          <g fill="black">
-            <rect x="20" y="20" width="2" height="60"/>
-            <rect x="25" y="20" width="1" height="60"/>
-            <rect x="30" y="20" width="3" height="60"/>
-            <rect x="37" y="20" width="1" height="60"/>
-            <rect x="42" y="20" width="2" height="60"/>
-            <rect x="48" y="20" width="1" height="60"/>
-            <rect x="53" y="20" width="4" height="60"/>
-            <rect x="61" y="20" width="1" height="60"/>
-            <rect x="66" y="20" width="2" height="60"/>
-            <rect x="72" y="20" width="1" height="60"/>
-            <rect x="77" y="20" width="3" height="60"/>
-            <rect x="84" y="20" width="1" height="60"/>
-            <rect x="89" y="20" width="2" height="60"/>
-            <rect x="95" y="20" width="1" height="60"/>
-            <rect x="100" y="20" width="3" height="60"/>
-            <rect x="107" y="20" width="2" height="60"/>
-          </g>
-          <text x="150" y="95" text-anchor="middle" font-family="Arial" font-size="12">ORDER-${data}</text>
-        </svg>
-      `
-
-      const blob = new Blob([svgBarcode], { type: "image/svg+xml" })
-      const url = URL.createObjectURL(blob)
-      resolve(url)
-    }
-  })
-}
-
-export const downloadBarcode = (barcodeData, filename) => {
-  const link = document.createElement("a")
-  link.download = filename
-  link.href = barcodeData
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
 }
