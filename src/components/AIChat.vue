@@ -123,22 +123,22 @@ export default {
     ])
 
     const aiResponses = {
-      'track my order': 'I can help you track your order! Please go to "My Orders" section to see real-time updates on all your orders.',
-      'book a service': 'Ready to book a new service? Click on "Book a Service" to choose from our available services like food delivery, bill payments, and more!',
-      'payment help': 'For payment assistance, you can upload payment proof in the "Upload Payment" section. We accept GCash, online banking, and cash on delivery.',
+      'track my order': 'I can help you track your order! Please go to the <span class="font-semibold text-green-600 dark:text-green-400">My Orders</span> section to see real-time updates on all your orders.',
+      'book a service': 'Ready to book a new service? Click on <span class="font-semibold text-green-600 dark:text-green-400">Book a Service</span> to choose from our available services like food delivery, bill payments, and more!',
+      'payment help': 'For payment assistance, you can upload payment proof in the <span class="font-semibold text-green-600 dark:text-green-400">Upload Payment</span> section. We accept GCash, online banking, and cash on delivery.',
       'contact driver': 'You can chat with your assigned driver once your order is confirmed. Look for the chat button in your order tracking page.',
       'cancel order': 'Orders can be cancelled within 30 seconds of booking. After that, please contact our support team.',
-      'faq': 'Here are some common questions:\n• How long does delivery take? Usually 30-60 minutes\n• What areas do you serve? Currently serving Calapan City (5200)\n• How do I pay? GCash, online banking, or cash on delivery',
+      'faq': 'Here are some common questions:<br>• How long does delivery take? Usually 30-60 minutes<br>• What areas do you serve? Currently serving Calapan City (5200)<br>• How do I pay? GCash, online banking, or cash on delivery',
       'hello': 'Hello! How can I assist you with your QuickServe experience today?',
       'hi': 'Hi there! What can I help you with?',
-      'help': 'I\'m here to help! You can ask me about:\n• Order tracking\n• Booking services\n• Payment methods\n• Delivery areas\n• Account settings',
-      'services': 'We offer these services:\n🍔 Food Delivery\n💳 Bill Payments\n📦 Pick-up & Drop\n🛒 Grocery Shopping\n💊 Medicine Delivery\n🎁 Gift Delivery',
+      'help': 'I\'m here to help! You can ask me about:<br>• Order tracking<br>• Booking services<br>• Payment methods<br>• Delivery areas<br>• Account settings',
+      'services': 'We offer these services:<br>🍔 Food Delivery<br>💳 Bill Payments<br>📦 Pick-up & Drop<br>🛒 Grocery Shopping<br>💊 Medicine Delivery<br>🎁 Gift Delivery',
       'delivery time': 'Delivery usually takes 30-60 minutes depending on your location and the service type. You\'ll get real-time updates once your order is assigned to a driver.',
-      'payment methods': 'We accept:\n• GCash (with QR code)\n• Online Banking\n• Cash on Delivery (COD)',
+      'payment methods': 'We accept:<br>• GCash (with QR code)<br>• Online Banking<br>• Cash on Delivery (COD)',
       'delivery area': 'We currently serve Calapan City and surrounding areas (Zip Code: 5200). We\'re expanding to more locations soon!',
       'promo code': 'You can enter promo codes during checkout to get discounts on your orders. Check our homepage for current promotions!',
       'driver rating': 'After your order is delivered, you can rate your driver and leave feedback. This helps us maintain quality service.',
-      'account': 'You can manage your account in the Profile section where you can update your information, change password, and view order history.',
+      'account': 'You can manage your account in the <span class="font-semibold text-green-600 dark:text-green-400">Profile</span> section where you can update your information, change password, and view order history.',
       'support': 'For additional support, you can contact us through the app or call our customer service. We\'re here to help 24/7!'
     }
 
@@ -152,14 +152,19 @@ export default {
         }
       }
 
-      // Check for order-related queries
-      if (lowerMessage.includes('order') && (lowerMessage.includes('where') || lowerMessage.includes('status'))) {
-        return 'I can help you track your order! Go to "My Orders" to see the current status and location of your delivery.'
+      // Check for order-related queries (Live tracking)
+      if (lowerMessage.includes('order') && (lowerMessage.includes('where') || lowerMessage.includes('status') || lowerMessage.includes('track'))) {
+        return 'I can help you track your order! Please go to the <span class="font-semibold text-green-600 dark:text-green-400">My Orders</span> section to see the current status and location of your delivery.'
       }
 
-      // Check for booking queries
-      if (lowerMessage.includes('book') || lowerMessage.includes('order') || lowerMessage.includes('delivery')) {
-        return 'Ready to place an order? Click "Book a Service" to choose from food delivery, bill payments, grocery shopping, and more!'
+      // Check for booking queries (Smart redirect to forms)
+      if (lowerMessage.includes('book') || lowerMessage.includes('order') || lowerMessage.includes('delivery') || lowerMessage.includes('new service')) {
+        return 'Ready to place an order? Click on <span class="font-semibold text-green-600 dark:text-green-400">Book a Service</span> to choose from food delivery, bill payments, grocery shopping, and more!'
+      }
+
+      // Check for payment queries (Smart redirect to forms)
+      if (lowerMessage.includes('payment') || lowerMessage.includes('pay') || lowerMessage.includes('proof')) {
+        return 'For payment assistance, you can upload payment proof in the <span class="font-semibold text-green-600 dark:text-green-400">Upload Payment</span> section. We accept GCash, online banking, and cash on delivery.'
       }
 
       // Check for location queries
@@ -239,7 +244,7 @@ export default {
     }
 
     const formatMessage = (content) => {
-      // Convert line breaks to HTML
+      // Convert line breaks to HTML and allow span tags for styling
       return content.replace(/\n/g, '<br>')
     }
 
