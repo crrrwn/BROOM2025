@@ -1,11 +1,11 @@
 <template>
 <div id="app">
-  <!-- Show sidebar layout only when user is logged in and not on auth pages -->
-  <SidebarLayout v-if="currentUser && !isAuthPage">
+  <!-- Show sidebar layout only when user is logged in and not on auth pages or admin pages -->
+  <SidebarLayout v-if="currentUser && !isAuthPage && !isAdminRoute">
     <router-view />
   </SidebarLayout>
   
-  <!-- Show regular router-view for homepage and auth pages -->
+  <!-- Show regular router-view for homepage, auth pages, and admin pages -->
   <router-view v-else />
   
   <!-- Toast Notifications -->
@@ -34,13 +34,18 @@ setup() {
   const currentUser = ref(null)
   const isLoading = ref(true)
 
-  // Check if current route is an auth page or homepage - INCLUDE email-confirmed here
+  // Check if current route is an auth page or homepage
   const isAuthPage = computed(() => {
     const authRoutes = ['/', '/login', '/register', '/forgot-password', '/auth/reset-password', '/auth/email-confirmed']
     return authRoutes.includes(route.path)
   })
 
-  // Toast notification system
+  // Check if current route is an admin route
+  const isAdminRoute = computed(() => {
+    return route.path.startsWith('/admin')
+  })
+
+  // Toast notification system (existing code)
   const toastMessage = ref('')
   const toastType = ref('success')
   const showToast = ref(false)
@@ -72,7 +77,7 @@ setup() {
     }
   }
 
-  // Initialize auth state
+  // Initialize auth state (existing code)
   const initializeAuth = async () => {
     console.log('🔐 INITIALIZING AUTH...')
     
@@ -102,7 +107,9 @@ setup() {
           currentUser.value = null
           console.log('❌ User logged out')
           // Redirect to homepage when user logs out
-          router.push('/')
+          if (!route.path.startsWith('/admin')) {
+            router.push('/')
+          }
         }
       })
 
@@ -129,6 +136,7 @@ setup() {
     currentUser,
     isLoading,
     isAuthPage,
+    isAdminRoute,
     toastMessage,
     toastType,
     showToast
