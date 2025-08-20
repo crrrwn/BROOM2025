@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router"
 import { supabase } from "@/lib/supabase"
 // Import the admin authentication function
 import { isAdminAuthenticated } from "@/lib/admin"
+import { isDriverAuthenticated } from "@/lib/driver"
 
 const routes = [
   {
@@ -146,6 +147,52 @@ const routes = [
       },
     ],
   },
+  // Driver routes with layout
+  {
+    path: "/driver/login",
+    name: "DriverLogin",
+    component: () => import("@/views/driver/DriverLogin.vue"),
+    meta: { requiresGuest: true },
+  },
+  {
+    path: "/driver/register",
+    name: "DriverRegister",
+    component: () => import("@/views/driver/DriverRegister.vue"),
+    // No meta restrictions - accessible to anyone
+  },
+  {
+    path: "/driver",
+    component: () => import("@/components/DriverSidebarLayout.vue"),
+    meta: { requiresDriver: true },
+    redirect: "/driver/dashboard",
+    children: [
+      {
+        path: "dashboard",
+        name: "DriverDashboard",
+        component: () => import("@/views/driver/DriverDashboard.vue"),
+      },
+      {
+        path: "available-bookings",
+        name: "DriverAvailableBookings",
+        component: () => import("@/views/driver/AvailableBookings.vue"),
+      },
+      {
+        path: "my-assignments",
+        name: "DriverMyAssignments",
+        component: () => import("@/views/driver/MyAssignments.vue"),
+      },
+      {
+        path: "upload-proof",
+        name: "DriverUploadProof",
+        component: () => import("@/views/driver/UploadProof.vue"),
+      },
+      {
+        path: "profile",
+        name: "DriverProfile",
+        component: () => import("@/views/driver/DriverProfile.vue"),
+      },
+    ],
+  },
 ]
 
 const router = createRouter({
@@ -156,8 +203,17 @@ const router = createRouter({
 // Navigation guards
 router.beforeEach(async (to, from, next) => {
   console.log("🔄 Navigation guard triggered:", to.path)
+  console.log("[v0] Navigation from:", from.path, "to:", to.path)
+  console.log("[v0] Route meta:", to.meta)
 
-  // Handle admin routes first
+  // Handle driver registration first - always allow access
+  if (to.path === "/driver/register") {
+    console.log("✅ Allowing access to driver registration")
+    next()
+    return
+  }
+
+  // Handle admin routes
   if (to.path.startsWith("/admin")) {
     if (to.path === "/admin/login") {
       // Allow access to admin login page
@@ -178,6 +234,39 @@ router.beforeEach(async (to, from, next) => {
         next("/admin/login")
       } else {
         console.log("✅ Admin authenticated, allowing access")
+        next()
+      }
+      return
+    }
+  }
+
+  // Handle other driver routes (except registration which is handled above)
+  if (to.path.startsWith("/driver")) {
+    console.log("[v0] Driver route detected:", to.path)
+    console.log("[v0] Checking driver authentication...")
+
+    if (to.path === "/driver/login") {
+      // Allow access to driver login page
+      if (isDriverAuthenticated()) {
+        // If already authenticated as driver, redirecting to driver dashboard
+        console.log("✅ Driver already authenticated, redirecting to dashboard")
+        next("/driver/dashboard")
+      } else {
+        // Allow access to driver login
+        console.log("✅ Allowing access to driver login")
+        next()
+      }
+      return
+    } else if (to.meta.requiresDriver || to.path.startsWith("/driver")) {
+      // For other driver routes, check driver authentication
+      const isAuthenticated = isDriverAuthenticated()
+      console.log("[v0] Driver authentication result:", isAuthenticated)
+
+      if (!isAuthenticated) {
+        console.log("❌ Driver not authenticated, redirecting to driver login")
+        next("/driver/login")
+      } else {
+        console.log("✅ Driver authenticated, allowing access to:", to.path)
         next()
       }
       return

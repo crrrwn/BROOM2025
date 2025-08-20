@@ -1,11 +1,11 @@
 <template>
 <div id="app">
-  <!-- Show sidebar layout only when user is logged in and not on auth pages or admin pages -->
-  <SidebarLayout v-if="currentUser && !isAuthPage && !isAdminRoute">
+  <!-- Show sidebar layout only when user is logged in and not on auth pages or admin pages or driver pages -->
+  <SidebarLayout v-if="currentUser && !isAuthPage && !isAdminRoute && !isDriverRoute">
     <router-view />
   </SidebarLayout>
   
-  <!-- Show regular router-view for homepage, auth pages, and admin pages -->
+  <!-- Show regular router-view for homepage, auth pages, admin pages, and driver pages -->
   <router-view v-else />
   
   <!-- Toast Notifications -->
@@ -21,6 +21,7 @@
 import { ref, provide, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from './lib/supabase'
+import { isDriverAuthenticated } from './lib/driver'
 import SidebarLayout from './components/SidebarLayout.vue'
 
 export default {
@@ -43,6 +44,11 @@ setup() {
   // Check if current route is an admin route
   const isAdminRoute = computed(() => {
     return route.path.startsWith('/admin')
+  })
+
+  // Check if current route is a driver route
+  const isDriverRoute = computed(() => {
+    return route.path.startsWith('/driver')
   })
 
   // Toast notification system (existing code)
@@ -107,7 +113,7 @@ setup() {
           currentUser.value = null
           console.log('❌ User logged out')
           // Redirect to homepage when user logs out
-          if (!route.path.startsWith('/admin')) {
+          if (!route.path.startsWith('/admin') && !route.path.startsWith('/driver')) {
             router.push('/')
           }
         }
@@ -137,6 +143,7 @@ setup() {
     isLoading,
     isAuthPage,
     isAdminRoute,
+    isDriverRoute,
     toastMessage,
     toastType,
     showToast

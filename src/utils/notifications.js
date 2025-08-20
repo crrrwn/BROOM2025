@@ -7,6 +7,8 @@ import { useToast } from "vue-toastification"
 // Notification utilities for the delivery app
 export const createNotification = async (userId, title, message, type = "system", actionUrl = null) => {
   try {
+    console.log("Creating notification:", { userId, title, message, type, actionUrl })
+
     const { data, error } = await supabase
       .from("notifications")
       .insert([
@@ -17,16 +19,32 @@ export const createNotification = async (userId, title, message, type = "system"
           type,
           action_url: actionUrl,
           created_at: new Date().toISOString(),
+          is_read: false,
         },
       ])
       .select()
       .single()
 
-    return { data, error }
+    if (error) {
+      console.error("Database error creating notification:", error)
+      return { data: null, error }
+    }
+
+    console.log("Notification created successfully:", data)
+    return { data, error: null }
   } catch (error) {
     console.error("Error creating notification:", error)
     return { data: null, error }
   }
+}
+
+export const createAdminWarningNotification = async (userId, reason, isFlag = false) => {
+  const title = isFlag ? "Account Flagged" : "Account Warning"
+  const message = isFlag
+    ? `Your account has been flagged by an administrator. Reason: ${reason}. Please contact support if you believe this is an error.`
+    : `You have received a warning from an administrator. Reason: ${reason}. Please review our terms of service to avoid further action.`
+
+  return await createNotification(userId, title, message, "admin_action", "/profile")
 }
 
 export const sendOrderUpdateNotification = async (userId, orderId, status, driverName = null) => {
@@ -275,6 +293,7 @@ export const shouldSendNotification = (userId, notificationType) => {
     promo: "promoOffers",
     delivery: "deliveryReminders",
     system: "systemNotifications",
+    admin_action: "adminAction",
   }
 
   const prefKey = typeMap[notificationType]

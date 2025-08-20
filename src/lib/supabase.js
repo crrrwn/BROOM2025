@@ -186,6 +186,15 @@ export const updateOrderStatus = async (orderId, newStatus) => {
 
 // Payments functions
 export const createPayment = async (paymentData) => {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
+
+  if (!userError && user && !paymentData.user_id) {
+    paymentData.user_id = user.id
+  }
+
   const { data, error } = await supabase.from("payments").insert([paymentData]).select().single()
   return { data, error }
 }

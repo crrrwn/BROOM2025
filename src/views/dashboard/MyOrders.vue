@@ -48,7 +48,7 @@
         <p class="text-gray-500 mb-4">You haven't placed any orders yet.</p>
         <router-link to="/book-service" class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold">
           <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
           </svg>
           Book a Service
         </router-link>
@@ -70,7 +70,8 @@
               </div>
             </div>
             <div class="text-right">
-              <p class="text-2xl font-bold text-gray-900">₱{{ order.total_amount.toLocaleString() }}</p>
+              <!-- Display actual total_amount from database instead of calculated value -->
+              <p class="text-2xl font-bold text-gray-900">₱{{ getFinalPrice(order) }}</p>
               <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium" :class="getStatusClass(order.status)">
                 {{ formatStatus(order.status) }}
               </span>
@@ -151,20 +152,9 @@
             </router-link>
 
             <button
-              v-if="order.status !== 'cancelled'"
-              @click="showBarcode(order)"
-              class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-xl hover:bg-gray-700 transition-colors font-semibold"
-            >
-              <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
-              </svg>
-              View Barcode
-            </button>
-
-            <button
               v-if="canCancelOrder(order)"
-              @click="cancelOrder(order.id)"
-              class="inline-flex items-center px-4 py-2 bg-red-600 text-white text-sm rounded-xl hover:bg-red-700 transition-colors font-semibold"
+              @click="openCancelModal(order)"
+              class="inline-flex items-center px-4 py-2 bg-gray-600 text-white text-sm rounded-xl hover:bg-gray-700 transition-colors font-semibold"
             >
               <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -178,7 +168,7 @@
               class="inline-flex items-center px-4 py-2 bg-yellow-600 text-white text-sm rounded-xl hover:bg-yellow-700 transition-colors font-semibold"
             >
               <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1-81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1-81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
               </svg>
               Rate Order
             </button>
@@ -189,7 +179,7 @@
               class="inline-flex items-center px-4 py-2 bg-purple-600 text-white text-sm rounded-xl hover:bg-purple-700 transition-colors font-semibold"
             >
               <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 3v1m6.364-.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0114 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
               </svg>
               Chat with Driver
             </button>
@@ -200,7 +190,7 @@
               class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 transition-colors font-semibold"
             >
               <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364-.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0114 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 3v1m6.364-.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0114 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
               </svg>
               Order Assistant
             </button>
@@ -236,36 +226,6 @@
       >
         Next
       </button>
-    </div>
-
-    <!-- Barcode Modal -->
-    <div v-if="showBarcodeModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl overflow-y-auto max-h-[90vh]">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">Order Barcode</h3>
-        
-        <div class="text-center mb-6">
-          <div class="bg-gray-100 p-4 rounded-xl mb-4">
-            <div class="barcode-container w-full" id="barcode-display"></div>
-          </div>
-          <p class="text-sm text-gray-600">Show this barcode to your delivery driver</p>
-          <p class="text-xs text-gray-500 mt-2">Order #{{ selectedOrderForBarcode?.id }}</p>
-        </div>
-
-        <div class="flex space-x-3">
-          <button
-            @click="downloadBarcode"
-            class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
-          >
-            Download
-          </button>
-          <button
-            @click="showBarcodeModal = false"
-            class="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold"
-          >
-            Close
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Order Chatbot Modal -->
@@ -365,14 +325,68 @@
         </div>
       </div>
     </div>
+
+    <!-- Cancel Order Modal -->
+    <div v-if="showCancelModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div class="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Cancel Order</h3>
+        
+        <div class="mb-4">
+          <p class="text-sm text-gray-600 mb-4">
+            Are you sure you want to cancel Order #{{ selectedOrderForCancel?.id }}?
+          </p>
+          
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Reason for Cancellation</label>
+          <select
+            v-model="cancelReason"
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-900"
+            required
+          >
+            <option value="">Select a reason</option>
+            <option value="changed_mind">Changed my mind</option>
+            <option value="wrong_address">Wrong delivery address</option>
+            <option value="wrong_service">Selected wrong service</option>
+            <option value="payment_issue">Payment issue</option>
+            <option value="emergency">Emergency situation</option>
+            <option value="duplicate_order">Duplicate order</option>
+            <option value="other">Other reason</option>
+          </select>
+        </div>
+
+        <div v-if="cancelReason === 'other'" class="mb-4">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">Please specify</label>
+          <textarea
+            v-model="customCancelReason"
+            rows="3"
+            class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 bg-white text-gray-900"
+            placeholder="Please provide more details..."
+          ></textarea>
+        </div>
+
+        <div class="flex space-x-3">
+          <button
+            @click="closeCancelModal"
+            class="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-semibold"
+          >
+            Keep Order
+          </button>
+          <button
+            @click="confirmCancelOrder"
+            :disabled="!cancelReason"
+            class="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel Order
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, inject, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, inject, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase, subscribeToTable, unsubscribe } from '../../lib/supabase'
-import { generateOrderBarcode, createBarcodeElement, downloadBarcodeImage } from '../../utils/barcode'
 
 export default {
   name: 'MyOrders',
@@ -386,13 +400,14 @@ export default {
     const drivers = ref([])
     const driverLocations = ref([])
     const showRatingModal = ref(false)
-    const showBarcodeModal = ref(false)
     const showChatbotModal = ref(false)
-    const selectedOrder = ref(null)
-    const selectedOrderForBarcode = ref(null)
     const selectedOrderForChatbot = ref(null)
     const chatbotMessages = ref([])
     const chatbotInput = ref('')
+    const showCancelModal = ref(false)
+    const selectedOrderForCancel = ref(null)
+    const cancelReason = ref('')
+    const customCancelReason = ref('')
     const rating = ref({
       rating: 5,
       feedback: ''
@@ -478,6 +493,14 @@ export default {
           toast.error('Failed to load orders')
         } else {
           orders.value = data || []
+          console.log('[v0] Loaded orders with price data:', data?.map(order => ({
+            id: order.id,
+            total_amount: order.total_amount,
+            final_price: order.final_price,
+            amount: order.amount,
+            total_cost: order.total_cost,
+            service_details: order.service_details
+          })))
           setupCancelTimers()
           // Reset current page to 1 when orders are reloaded or filtered
           currentPage.value = 1
@@ -778,7 +801,7 @@ export default {
                 } else if (key.includes('date') || key.includes('schedule')) {
                   try {
                     displayValue = new Date(value).toLocaleString();
-                  } catch (e) { /* ignore */ }
+                  } catch (e) {/* ignore */}
                 } else if (key.includes('amount') || key.includes('cost') || key.includes('budget')) {
                   if (typeof value === 'number') {
                     displayValue = `₱${value.toLocaleString()}`;
@@ -848,72 +871,6 @@ export default {
 
     const showOrderChatbot = (order) => {
       return order.driver_id && ['assigned', 'picked_up', 'in_transit', 'delivered'].includes(order.status)
-    }
-
-    const showBarcode = async (order) => {
-      selectedOrderForBarcode.value = order
-      showBarcodeModal.value = true
-      
-      await nextTick() // Ensure modal is rendered and DOM is updated
-
-      const barcodeDisplayElement = document.getElementById('barcode-display');
-      if (!barcodeDisplayElement) {
-        console.error('[MyOrders.vue] Barcode display element not found in DOM. Cannot render barcode.');
-        toast.error('Failed to generate barcode: Display area missing.');
-        return;
-      }
-
-      // Clear any previous barcode content to ensure a fresh render
-      barcodeDisplayElement.innerHTML = '';
-
-      if (!selectedOrderForBarcode.value || selectedOrderForBarcode.value.id === undefined || selectedOrderForBarcode.value.id === null) {
-        console.error('[MyOrders.vue] Cannot generate barcode: Selected order or its ID is invalid.', selectedOrderForBarcode.value);
-        toast.error('Failed to generate barcode: Invalid order data.');
-        // Display a fallback message in the modal
-        barcodeDisplayElement.innerHTML = `<p class="text-red-500">Error: Invalid Order ID for barcode.</p>`;
-        return;
-      }
-
-      const orderId = selectedOrderForBarcode.value.id;
-      console.log(`[MyOrders.vue] Attempting to generate barcode for Order ID: ${orderId}`);
-
-      try {
-        // generateOrderBarcode ensures the ID is a string
-        const barcodeValue = generateOrderBarcode(orderId);
-        console.log(`[MyOrders.vue] Generated barcode value: "${barcodeValue}"`);
-
-        if (!barcodeValue || typeof barcodeValue !== 'string' || barcodeValue.trim() === '') {
-          console.error('[MyOrders.vue] Generated barcode value is empty or invalid. Cannot render barcode:', barcodeValue);
-          toast.error('Failed to generate barcode: Invalid barcode value.');
-          // Display a fallback message in the modal
-          barcodeDisplayElement.innerHTML = `<p class="text-red-500">Error: Barcode value is empty or invalid for Order ID: ${orderId}.</p>`;
-          return;
-        }
-
-        // createBarcodeElement handles rendering to the 'barcode-display' div
-        createBarcodeElement(barcodeValue, 'barcode-display', {
-          width: 250, // This width is for JsBarcode's internal calculation, not the final SVG width
-          height: 80,
-          showText: true
-        });
-        // If we reach here, it means createBarcodeElement did not throw an error
-        // and should have either rendered the barcode or its SVG fallback.
-        console.log(`[MyOrders.vue] Barcode rendering attempt completed for Order ID: ${orderId}. Please check the modal for display.`);
-
-      } catch (error) {
-        // This catch block will be hit if createBarcodeElement itself throws an uncaught error.
-        console.error('[MyOrders.vue] An unexpected error occurred during barcode generation or rendering:', error);
-        toast.error('Failed to generate barcode. Please check console for details.');
-        // Display a fallback message in the modal
-        barcodeDisplayElement.innerHTML = `<p class="text-red-500">Failed to generate barcode for Order ID: ${orderId}. See console for details.</p>`;
-      }
-    }
-
-    const downloadBarcode = () => {
-      if (selectedOrderForBarcode.value) {
-        const barcode = generateOrderBarcode(selectedOrderForBarcode.value.id)
-        downloadBarcodeImage(barcode, `order-${selectedOrderForBarcode.value.id}-barcode.png`)
-      }
     }
 
     const openOrderChatbot = (order) => {
@@ -991,25 +948,9 @@ export default {
     }
 
     const cancelOrder = async (orderId) => {
-      try {
-        const { error } = await supabase
-          .from('orders')
-          .update({ status: 'cancelled' })
-          .eq('id', orderId)
-
-        if (error) {
-          toast.error('Failed to cancel order')
-        } else {
-          toast.success('Order cancelled successfully')
-          if (cancelTimers.value[orderId]) {
-            clearInterval(cancelTimers.value[orderId])
-            delete cancelTimers.value[orderId]
-          }
-          loadOrders()
-        }
-      } catch (error) {
-        console.error('Cancel order error:', error)
-        toast.error('Failed to cancel order')
+      const order = orders.value.find(o => o.id === orderId)
+      if (order) {
+        openCancelModal(order)
       }
     }
 
@@ -1022,21 +963,21 @@ export default {
     }
 
     const openRatingModal = (order) => {
-      selectedOrder.value = order
+      selectedOrderForChatbot.value = order
       showRatingModal.value = true
     }
 
     const submitRating = async () => {
-      if (!selectedOrder.value) return
+      if (!selectedOrderForChatbot.value) return
 
       try {
         const { error } = await supabase
           .from('order_ratings')
           .insert([
             {
-              order_id: selectedOrder.value.id,
+              order_id: selectedOrderForChatbot.value.id,
               user_id: currentUser.value.id,
-              driver_id: selectedOrder.value.driver_id,
+              driver_id: selectedOrderForChatbot.value.driver_id,
               rating: rating.value.rating,
               feedback: rating.value.feedback,
               created_at: new Date().toISOString()
@@ -1049,7 +990,7 @@ export default {
           await supabase
             .from('orders')
             .update({ rated: true })
-            .eq('id', selectedOrder.value.id)
+            .eq('id', selectedOrderForChatbot.value.id)
 
           toast.success('Rating submitted successfully!')
           showRatingModal.value = false
@@ -1067,6 +1008,121 @@ export default {
         name: 'ChatWithDriver',
         params: { id: orderId }
       })
+    }
+
+    const openCancelModal = (order) => {
+      selectedOrderForCancel.value = order
+      showCancelModal.value = true
+      cancelReason.value = ''
+      customCancelReason.value = ''
+    }
+
+    const closeCancelModal = () => {
+      showCancelModal.value = false
+      selectedOrderForCancel.value = null
+      cancelReason.value = ''
+      customCancelReason.value = ''
+    }
+
+    const confirmCancelOrder = async () => {
+      if (!selectedOrderForCancel.value || !cancelReason.value) return
+
+      try {
+        console.log('[v0] Attempting to cancel order:', selectedOrderForCancel.value.id)
+        console.log('[v0] Cancel reason:', cancelReason.value)
+        
+        const finalReason = cancelReason.value === 'other' ? customCancelReason.value : cancelReason.value
+        
+        const { data, error } = await supabase
+          .from('orders')
+          .update({ 
+            status: 'cancelled',
+            cancellation_reason: finalReason,
+            cancelled_at: new Date().toISOString()
+          })
+          .eq('id', selectedOrderForCancel.value.id)
+          .select()
+
+        console.log('[v0] Cancel order response:', { data, error })
+
+        if (error) {
+          console.error('[v0] Cancel order error:', error)
+          toast.error(`Failed to cancel order: ${error.message}`)
+        } else {
+          console.log('[v0] Order cancelled successfully')
+          toast.success('Order cancelled successfully')
+          if (cancelTimers.value[selectedOrderForCancel.value.id]) {
+            clearInterval(cancelTimers.value[selectedOrderForCancel.value.id])
+            delete cancelTimers.value[selectedOrderForCancel.value.id]
+          }
+          
+          const orderIndex = orders.value.findIndex(o => o.id === selectedOrderForCancel.value.id)
+          if (orderIndex !== -1) {
+            orders.value[orderIndex].status = 'cancelled'
+            orders.value[orderIndex].cancellation_reason = finalReason
+            orders.value[orderIndex].cancelled_at = new Date().toISOString()
+          }
+          
+          closeCancelModal()
+        }
+      } catch (err) {
+        console.error('[v0] Cancel order exception:', err)
+        toast.error('Failed to cancel order: Network error')
+      }
+    }
+
+    const getFinalPrice = (order) => {
+      console.log('[v0] Getting final price for order:', order.id, {
+        total_amount: order.total_amount,
+        final_price: order.final_price,
+        amount: order.amount,
+        total_cost: order.total_cost
+      })
+
+      // Check multiple possible price fields in order of preference
+      const priceFields = [
+        'final_price',
+        'total_amount', 
+        'amount',
+        'total_cost',
+        'price'
+      ]
+
+      for (const field of priceFields) {
+        if (order[field] && order[field] > 0) {
+          console.log('[v0] Using price from field:', field, 'value:', order[field])
+          return order[field].toLocaleString()
+        }
+      }
+
+      // If no price found in main fields, try to extract from service_details
+      if (order.service_details) {
+        try {
+          const details = typeof order.service_details === 'string' 
+            ? JSON.parse(order.service_details) 
+            : order.service_details
+
+          const detailPriceFields = [
+            'estimated_amount',
+            'bill_amount', 
+            'estimated_cost',
+            'exact_budget',
+            'total_fee'
+          ]
+
+          for (const field of detailPriceFields) {
+            if (details[field] && details[field] > 0) {
+              console.log('[v0] Using price from service_details field:', field, 'value:', details[field])
+              return details[field].toLocaleString()
+            }
+          }
+        } catch (e) {
+          console.error('[v0] Error parsing service_details:', e)
+        }
+      }
+
+      console.log('[v0] No valid price found, defaulting to 0')
+      return '0'
     }
 
     onMounted(() => {
@@ -1103,12 +1159,14 @@ export default {
       goToPage,
       orderSteps,
       showRatingModal,
-      showBarcodeModal,
       showChatbotModal,
-      selectedOrderForBarcode,
       selectedOrderForChatbot,
       chatbotMessages,
       chatbotInput,
+      showCancelModal,
+      selectedOrderForCancel,
+      cancelReason,
+      customCancelReason,
       rating,
       getDisplayServiceType,
       getDisplayPaymentMethod,
@@ -1124,8 +1182,6 @@ export default {
       canRateOrder,
       canChatWithDriver,
       showOrderChatbot,
-      showBarcode,
-      downloadBarcode,
       openOrderChatbot,
       sendChatbotMessage,
       cancelOrder,
@@ -1133,6 +1189,10 @@ export default {
       openRatingModal,
       submitRating,
       chatWithDriver,
+      openCancelModal,
+      closeCancelModal,
+      confirmCancelOrder,
+      getFinalPrice
     }
   }
 }

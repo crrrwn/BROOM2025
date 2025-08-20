@@ -167,16 +167,20 @@
                     ></textarea>
                   </div>
                   <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Estimated Total Amount *</label>
-                    <input 
-                      v-model="bookingForm.estimatedAmount" 
-                      type="number" 
-                      step="0.01"
-                      min="0"
+                    <!-- Changed from "Estimated Total Amount" to "Budget Range" -->
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Budget Range *</label>
+                    <select 
+                      v-model="bookingForm.budgetRange" 
                       required
                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 bg-white"
-                      placeholder="Total cost of food items"
                     >
+                      <option value="">Select your budget range</option>
+                      <option value="100-200">₱100 - ₱200</option>
+                      <option value="200-300">₱200 - ₱300</option>
+                      <option value="300-500">₱300 - ₱500</option>
+                      <option value="500-1000">₱500 - ₱1,000</option>
+                      <option value="1000+">₱1,000+</option>
+                    </select>
                   </div>
                   <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Special Instructions</label>
@@ -554,15 +558,20 @@
                     >
                   </div>
                   <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Estimated Total Cost</label>
-                    <input 
-                      v-model="bookingForm.estimatedCost" 
-                      type="number" 
-                      step="0.01"
-                      min="0"
+                    <!-- Changed from estimated total cost input to budget range dropdown -->
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Budget Range</label>
+                    <select 
+                      v-model="bookingForm.budgetRange" 
                       class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 bg-white"
-                      placeholder="Approximate cost of medicines"
                     >
+                      <option value="">Select budget range</option>
+                      <option value="₱100-200">₱100 - ₱200</option>
+                      <option value="₱200-300">₱200 - ₱300</option>
+                      <option value="₱300-500">₱300 - ₱500</option>
+                      <option value="₱500-1000">₱500 - ₱1,000</option>
+                      <option value="₱1000-2000">₱1,000 - ₱2,000</option>
+                      <option value="₱2000+">₱2,000+</option>
+                    </select>
                   </div>
                 </div>
 
@@ -748,25 +757,12 @@
                         </div>
                         <div>
                           <p class="font-semibold text-gray-900">GCash</p>
-                          <p class="text-sm text-gray-500">Pay via QR code</p>
+                          <p class="text-sm text-gray-500">Mobile payment</p>
                         </div>
                       </div>
                     </label>
                     
-                    <label class="flex items-center p-4 border border-gray-300 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
-                      <input v-model="bookingForm.paymentMethod" type="radio" value="bank" class="mr-4 text-green-600 focus:ring-green-500">
-                      <div class="flex items-center">
-                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-4">
-                          <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                          </svg>
-                        </div>
-                        <div>
-                          <p class="font-semibold text-gray-900">Online Banking</p>
-                          <p class="text-sm text-gray-500">Bank transfer or QR</p>
-                        </div>
-                      </div>
-                    </label>
+                    <!-- Removed online banking payment option -->
                     
                     <label class="flex items-center p-4 border border-gray-300 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
                       <input v-model="bookingForm.paymentMethod" type="radio" value="cod" class="mr-4 text-green-600 focus:ring-green-500">
@@ -795,12 +791,7 @@
                       <p class="font-bold text-green-600">Account Name: BROOOM SERVICES</p>
                       <p class="mt-3 text-lg font-bold text-green-600">Amount: ₱{{ totalFee.toFixed(2) }}</p>
                     </div>
-                    <div v-else-if="bookingForm.paymentMethod === 'bank'" class="text-sm text-gray-800">
-                      <p class="mb-2 font-semibold">Send payment to:</p>
-                      <p class="font-bold text-green-600">BPI Account: 1234-5678-90</p>
-                      <p class="font-bold text-green-600">Account Name: BROOOM SERVICES</p>
-                      <p class="mt-3 text-lg font-bold text-green-600">Amount: ₱{{ totalFee.toFixed(2) }}</p>
-                    </div>
+                    <!-- Removed bank payment instructions since online banking option was removed -->
                   </div>
 
                   <div>
@@ -866,6 +857,54 @@
                   <div class="h-48 sm:h-64 bg-gray-100 rounded-xl overflow-hidden border shadow-sm">
                     <div ref="mapContainer" class="w-full h-full"></div>
                   </div>
+                  
+                  <!-- Added navigation controls and route info -->
+                  <div class="mt-3 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <button
+                        @click="toggleRouteDisplay"
+                        type="button"
+                        class="flex items-center space-x-2 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 4m0 13V4m0 0L9 7"></path>
+                        </svg>
+                        <span>{{ showRoute ? 'Hide Route' : 'Show Route' }}</span>
+                      </button>
+                      
+                      <button
+                        v-if="showRoute"
+                        @click="calculateAndDisplayRoute"
+                        type="button"
+                        class="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        <span>Optimize Route</span>
+                      </button>
+                    </div>
+                    
+                    <!-- Route Information Display -->
+                    <div v-if="showRoute && routeInfo.distance" class="bg-green-50 border border-green-200 rounded-lg p-3">
+                      <div class="flex items-center space-x-4 text-sm">
+                        <div class="flex items-center space-x-1">
+                          <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                          </svg>
+                          <span class="font-medium text-green-800">Distance: {{ routeInfo.distance }}</span>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                          <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <span class="font-medium text-green-800">Duration: {{ routeInfo.duration }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
                   <p class="text-xs text-gray-500 mt-1">
                     <span v-if="selectedService.type === 'pickup_drop'">Drag the pin to exact drop-off location</span>
                     <span v-else>Drag the pin to your exact location</span>
@@ -878,6 +917,11 @@
                     <span class="text-sm font-semibold text-gray-700">Service Fee:</span>
                     <span class="text-lg font-bold text-green-600">₱{{ selectedService.basePrice }}</span>
                   </div>
+                  <!-- Added distance display and updated delivery fee calculation -->
+                  <div class="flex items-center justify-between mb-3" v-if="routeDistance > 0">
+                    <span class="text-sm font-semibold text-gray-700">Distance:</span>
+                    <span class="text-lg font-bold text-purple-600">{{ routeDistance.toFixed(2) }} km</span>
+                  </div>
                   <div class="flex items-center justify-between mb-3">
                     <span class="text-sm font-semibold text-gray-700">Delivery Fee:</span>
                     <span class="text-lg font-bold text-blue-600">₱{{ deliveryFee.toFixed(2) }}</span>
@@ -887,7 +931,8 @@
                     <span class="text-base font-bold text-gray-900">Total:</span>
                     <span class="text-xl font-bold text-gray-900">₱{{ totalFee.toFixed(2) }}</span>
                   </div>
-                  <p class="text-xs text-gray-500 mt-3">*Final fee may vary based on actual distance and service complexity</p>
+                  <!-- Updated pricing explanation -->
+                  <p class="text-xs text-gray-500 mt-3">*Delivery fee: ₱10 per kilometer based on route distance</p>
                 </div>
               </div>
             </div>
@@ -927,17 +972,36 @@
         </button>
       </div>
     </div>
+    
+    <!-- Route Display Toggle -->
+    <div v-if="selectedService && (selectedService.type === 'food_delivery' || selectedService.type === 'pickup_drop')" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-white rounded-full shadow-lg border">
+      <button 
+        @click="toggleRouteDisplay"
+        class="px-4 py-2 rounded-full flex items-center space-x-2 transition-colors"
+        :class="showRoute ? 'bg-green-600 text-white hover:bg-green-700' : 'text-gray-700 hover:bg-gray-50'"
+      >
+        <svg v-if="!showRoute" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.597v-5.194A1 1 0 013.553 8.724L9 6M7 20l-2.447-1.224A1 1 0 014 17.597v-5.194A1 1 0 014.553
+ 10.724L7 9m5 14l-2.447-1.224A1 1 0 0110 21.597v-5.194A1 1 0 0110.553 13.724L13 12m5 14l-2.447-1.224A1 1 0 0116 21.597v-5.194A1 1 0 0116.553
+ 13.724L19 12"></path>
+        </svg>
+        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <span class="font-medium text-sm" v-if="!showRoute">Show Route</span>
+        <span class="font-medium text-sm" v-else>Hide Route</span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted, nextTick, inject } from 'vue'
+import { ref, computed, onMounted, nextTick, inject, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { validateZipCode, validatePhone, sanitizeInput, detectSpam } from '@/utils/validation'
 import { calculateDeliveryPrice } from '@/utils/pricing'
 import { geocodeAddress, getCurrentLocation as getGeoLocation, calculateDistance } from '@/utils/geocoding'
-import { generateOrderBarcode } from '@/utils/barcode'
 import { 
   UtensilsCrossed, 
   Receipt, 
@@ -989,6 +1053,15 @@ export default {
     const giftStoreMap = ref(null)
     const giftStoreMarker = ref(null)
     const giftStoreLocation = ref({ lat: 13.4119, lng: 121.1803 })
+
+    const directionsService = ref(null)
+    const directionsRenderer = ref(null)
+    const routeInfo = ref({
+      distance: '',
+      duration: '',
+      optimizedRoute: null
+    })
+    const showRoute = ref(false)
     
     const bookingForm = ref({
       deliveryAddress: '',
@@ -999,7 +1072,7 @@ export default {
       restaurant: '',
       restaurantAddress: '',
       foodItems: '',
-      estimatedAmount: 0,
+      budgetRange: '',
       notes: '',
       restaurantContact: '',
       // Bill Payments
@@ -1051,67 +1124,153 @@ export default {
 
     const services = ref([
       {
-        id: '1a2b3c4d-5e6f-7890-1234-567890abcdef', // Example UUID
+        id: '1a2b3c4d-5e6f-7890-1234-567890abcdef',
         name: 'Food Delivery',
         description: 'Order from restaurants and get it delivered hot and fresh',
         icon: UtensilsCrossed,
-        basePrice: 50,
+        basePrice: 50, // Updated to match AI dynamic pricing
         type: 'food_delivery'
       },
       {
-        id: '2b3c4d5e-6f78-9012-3456-7890abcdef12', // Example UUID
+        id: '2b3c4d5e-6f78-9012-3456-7890abcdef12',
         name: 'Bill Payments',
         description: 'Pay your utilities, internet, and other bills',
         icon: Receipt,
-        basePrice: 25,
+        basePrice: 25, // Updated to match AI dynamic pricing
         type: 'bill_payments'
       },
       {
-        id: '3c4d5e6f-7890-1234-5678-90abcdef1234', // Example UUID
+        id: '3c4d5e6f-7890-1234-5678-90abcdef1234',
         name: 'Pick-up & Drop',
         description: 'Need something picked up or delivered',
         icon: Truck,
-        basePrice: 75,
+        basePrice: 75, // Updated to match AI dynamic pricing
         type: 'pickup_drop'
       },
       {
-        id: '4d5e6f78-9012-3456-7890-abcdef123456', // Example UUID
+        id: '4d5e6f78-9012-3456-7890-abcdef123456',
         name: 'Grocery Shopping',
         description: 'Get your groceries delivered to your doorstep',
         icon: ShoppingCart,
-        basePrice: 100,
+        basePrice: 100, // Updated to match AI dynamic pricing
         type: 'grocery'
       },
       {
-        id: '5e6f7890-1234-5678-90ab-cdef12345678', // Example UUID
+        id: '5e6f7890-1234-5678-90ab-cdef12345678',
         name: 'Medicine Delivery',
         description: 'Fast and secure delivery of prescription medications',
         icon: Pill,
-        basePrice: 60,
+        basePrice: 60, // Updated to match AI dynamic pricing
         type: 'medicine_delivery'
       },
       {
-        id: '6f789012-3456-7890-abcd-ef1234567890', // Example UUID
+        id: '6f789012-3456-7890-abcd-ef1234567890',
         name: 'Gift Delivery',
         description: 'Surprise your loved ones with special deliveries',
         icon: Gift,
-        basePrice: 80,
+        basePrice: 80, // Updated to match AI dynamic pricing
         type: 'gift_delivery'
       }
     ])
 
+    const pricingConfigs = ref({})
+    const currentDeliveryBaseFee = ref(30) // Updated default delivery base fee
+    const currentPerKmRate = ref(15) // Updated default per km rate
+
+    const loadServicePricingConfigs = async () => {
+      try {
+        console.log('[v0] Loading service pricing configs from Supabase...')
+        
+        const { data, error } = await supabase
+          .from('service_pricing_config')
+          .select('*')
+        
+        if (error) {
+          console.error('Error loading service pricing configs:', error)
+          return
+        }
+
+        console.log('[v0] Loaded pricing configs:', data)
+
+        if (data && data.length > 0) {
+          data.forEach(config => {
+            console.log(`[v0] Processing config for service type: ${config.service_type}`, config)
+            
+            // Store pricing configs by service type
+            pricingConfigs.value[config.service_type] = config
+        
+            // Update service base prices - this affects the "Starting at" display
+            const service = services.value.find(s => s.type === config.service_type)
+            if (service) {
+              if (config.base_price !== null && config.base_price !== undefined) {
+                const oldPrice = service.basePrice
+                service.basePrice = config.base_price
+                console.log(`[v0] Updated ${config.service_type} "Starting at" price from ₱${oldPrice} to ₱${config.base_price}`)
+              }
+            } else {
+              console.warn(`[v0] Service not found for type: ${config.service_type}`)
+            }
+        
+            // Update delivery fees and multipliers
+            if (config.base_fee !== null && config.base_fee !== undefined) {
+              currentDeliveryBaseFee.value = config.base_fee
+              console.log('[v0] Updated delivery base fee to:', config.base_fee)
+            }
+            if (config.per_km_rate !== null && config.per_km_rate !== undefined) {
+              currentPerKmRate.value = config.per_km_rate
+              console.log('[v0] Updated per km rate to:', config.per_km_rate)
+            }
+        
+            // Store additional multipliers for pricing calculations
+            if (config.time_multiplier !== null && config.time_multiplier !== undefined) {
+              pricingConfigs.value[config.service_type].timeMultiplier = config.time_multiplier
+              console.log(`[v0] Stored time multiplier for ${config.service_type}:`, config.time_multiplier)
+            }
+            if (config.distance_multiplier !== null && config.distance_multiplier !== undefined) {
+              pricingConfigs.value[config.service_type].distanceMultiplier = config.distance_multiplier
+              console.log(`[v0] Stored distance multiplier for ${config.service_type}:`, config.distance_multiplier)
+            }
+            if (config.availability_factor !== null && config.availability_factor !== undefined) {
+              pricingConfigs.value[config.service_type].availabilityFactor = config.availability_factor
+              console.log(`[v0] Stored availability factor for ${config.service_type}:`, config.availability_factor)
+            }
+            if (config.minimum_fare !== null && config.minimum_fare !== undefined) {
+              pricingConfigs.value[config.service_type].minimumFare = config.minimum_fare
+              console.log(`[v0] Stored minimum fare for ${config.service_type}:`, config.minimum_fare)
+            }
+          })
+      
+          console.log('[v0] Final pricing configs:', pricingConfigs.value)
+          console.log('[v0] Updated service base prices (Starting at):')
+          services.value.forEach(service => {
+            console.log(`  - ${service.name}: ₱${service.basePrice}`)
+          })
+      
+          services.value = [...services.value]
+      
+          if (selectedService.value && pickupLocation.value && userLocation.value) {
+            await calculatePrice()
+          }
+        } else {
+          console.log('[v0] No pricing configs found in database, using default prices')
+          console.log('[v0] Current default service prices:')
+          services.value.forEach(service => {
+            console.log(`  - ${service.name}: ₱${service.basePrice}`)
+          })
+        }
+      } catch (error) {
+        console.error('Error loading service pricing configs:', error)
+      }
+    }
+
+    const refreshPricingData = async () => {
+      console.log('[v0] Refreshing pricing data...')
+      await loadServicePricingConfigs()
+    }
+
     const deliveryFee = computed(() => {
-      // Calculate distance-based delivery fee
-      const baseDistance = 2 // km
-      const baseFee = 30
-      const perKmFee = 15
-      
-      // For now, assume 3km average distance
-      // In real implementation, this would use actual map distance
-      const estimatedDistance = 3
-      const additionalDistance = Math.max(0, estimatedDistance - baseDistance)
-      
-      return baseFee + (additionalDistance * perKmFee)
+      if (!routeDistance.value) return 0
+      return routeDistance.value * 10 // 10 pesos per kilometer
     })
 
     const totalFee = computed(() => {
@@ -1139,7 +1298,7 @@ export default {
         case 'food_delivery':
           return bookingForm.value.restaurant && bookingForm.value.restaurantAddress && 
                  bookingForm.value.foodItems && 
-                 bookingForm.value.estimatedAmount > 0 && bookingForm.value.restaurantContact
+                 bookingForm.value.budgetRange && bookingForm.value.restaurantContact
         case 'bill_payments':
           return bookingForm.value.billerName && bookingForm.value.accountNumber && bookingForm.value.amount > 0 &&
                  (bookingForm.value.billerName !== 'Other' || bookingForm.value.customBiller)
@@ -1225,6 +1384,19 @@ export default {
         ]
       })
 
+      directionsService.value = new window.google.maps.DirectionsService()
+      directionsRenderer.value = new window.google.maps.DirectionsRenderer({
+        draggable: true,
+        panel: null,
+        suppressMarkers: false,
+        polylineOptions: {
+          strokeColor: '#22c55e',
+          strokeWeight: 4,
+          strokeOpacity: 0.8
+        }
+      })
+      directionsRenderer.value.setMap(map.value)
+
       marker.value = new window.google.maps.Marker({
         position: calapanCenter,
         map: map.value,
@@ -1241,6 +1413,9 @@ export default {
         if (address) {
           bookingForm.value.deliveryAddress = address
         }
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
 
       // Add click listener to map
@@ -1252,7 +1427,148 @@ export default {
             bookingForm.value.deliveryAddress = address
           }
         })
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
+    }
+
+    const calculateAndDisplayRoute = async () => {
+      if (!directionsService.value || !directionsRenderer.value) return
+
+      let origin, destination
+
+      // Determine origin and destination based on service type
+      if (selectedService.value?.type === 'food_delivery') {
+        origin = restaurantLocation.value
+        destination = userLocation.value
+      } else if (selectedService.value?.type === 'pickup_drop') {
+        origin = pickupLocation.value
+        destination = userLocation.value
+      } else {
+        // For other services, show route from service center to user location
+        origin = { lat: 13.4119, lng: 121.1803 } // Default service center
+        destination = userLocation.value
+      }
+
+      try {
+        const request = {
+          origin: origin,
+          destination: destination,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: true,
+          avoidHighways: false,
+          avoidTolls: true
+        }
+
+        directionsService.value.route(request, (result, status) => {
+          if (status === 'OK') {
+            directionsRenderer.value.setDirections(result)
+            
+            const route = result.routes[0]
+            const leg = route.legs[0]
+            
+            routeInfo.value = {
+              distance: leg.distance.text,
+              duration: leg.duration.text,
+              optimizedRoute: route
+            }
+
+            const distanceInKm = leg.distance.value / 1000
+            routeDistance.value = distanceInKm
+            routeDuration.value = leg.duration.text
+
+            console.log('[v0] Route calculated:', routeInfo.value)
+            console.log('[v0] Distance in km:', distanceInKm)
+            console.log('[v0] Delivery fee:', deliveryFee.value)
+            console.log('[v0] Total fee:', totalFee.value)
+            toast?.success(`Route found: ${leg.distance.text}, ${leg.duration.text}`)
+          } else {
+            console.error('[v0] Directions request failed:', status)
+            toast?.error('Unable to calculate route')
+          }
+        })
+      } catch (error) {
+        console.error('[v0] Route calculation error:', error)
+        toast?.error('Error calculating route')
+      }
+    }
+
+    const toggleRouteDisplay = () => {
+      showRoute.value = !showRoute.value
+      
+      if (showRoute.value) {
+        calculateAndDisplayRoute()
+      } else {
+        directionsRenderer.value.setDirections({ routes: [] })
+        routeInfo.value = {
+          distance: '',
+          duration: '',
+          optimizedRoute: null
+        }
+      }
+    }
+
+    const optimizeRouteWithWaypoints = async (waypoints = []) => {
+      if (!directionsService.value || waypoints.length === 0) return
+
+      let origin, destination
+
+      if (selectedService.value?.type === 'food_delivery') {
+        origin = restaurantLocation.value
+        destination = userLocation.value
+      } else if (selectedService.value?.type === 'pickup_drop') {
+        origin = pickupLocation.value
+        destination = userLocation.value
+      } else {
+        origin = { lat: 13.4119, lng: 121.1803 }
+        destination = userLocation.value
+      }
+
+      try {
+        const request = {
+          origin: origin,
+          destination: destination,
+          waypoints: waypoints.map(point => ({
+            location: point,
+            stopover: true
+          })),
+          optimizeWaypoints: true,
+          travelMode: window.google.maps.TravelMode.DRIVING,
+          avoidHighways: false,
+          avoidTolls: true
+        }
+
+        directionsService.value.route(request, (result, status) => {
+          if (status === 'OK') {
+            directionsRenderer.value.setDirections(result)
+            
+            const route = result.routes[0]
+            let totalDistance = 0
+            let totalDuration = 0
+            
+            route.legs.forEach(leg => {
+              totalDistance += leg.distance.value
+              totalDuration += leg.duration.value
+            })
+            
+            routeInfo.value = {
+              distance: `${(totalDistance / 1000).toFixed(1)} km`,
+              duration: `${Math.ceil(totalDuration / 60)} mins`,
+              optimizedRoute: route
+            }
+
+            console.log('[v0] Optimized route calculated:', routeInfo.value)
+            toast?.success(`Optimized route: ${routeInfo.value.distance}, ${routeInfo.value.duration}`)
+          } else {
+            console.error('[v0] Optimized directions request failed:', status)
+            toast?.error('Unable to optimize route')
+          }
+        })
+      } catch (error) {
+        console.error('[v0] Route optimization error:', error)
+        toast?.error('Error optimizing route')
+      }
     }
 
     const initializeAutocomplete = () => {
@@ -1542,7 +1858,7 @@ export default {
           restaurant: bookingForm.value.restaurant || null,
           restaurant_contact: bookingForm.value.restaurantContact || null,
           food_items: bookingForm.value.foodItems || null,
-          estimated_amount: bookingForm.value.estimatedAmount || null,
+          budget_range: bookingForm.value.budgetRange || null,
           food_notes: bookingForm.value.notes || null,
           restaurant_address: bookingForm.value.restaurantAddress || null, // Added missing field
           // Bill payments specific - ALL FIELDS SAVED
@@ -1591,7 +1907,7 @@ export default {
 
         const orderData = {
           user_id: currentUser.value.id,
-          service_id: actualServiceId,
+          service_id: selectedService.value.name, // Changed from actualServiceId to service name
           pickup_address: bookingForm.value.pickupAddress || bookingForm.value.restaurantAddress || bookingForm.value.giftStoreAddress || bookingForm.value.deliveryAddress, // Dynamic pickup based on service
           pickup_contact: bookingForm.value.pickupContact || bookingForm.value.restaurantContact || bookingForm.value.contactNumber, // Dynamic contact
           delivery_address: sanitizeInput(bookingForm.value.deliveryAddress),
@@ -1641,14 +1957,15 @@ export default {
           throw new Error('Order was not created properly')
         }
 
-        // Create payment record
         const paymentData = {
           order_id: order.id,
+          user_id: currentUser.value?.id, // Add user_id
           amount: totalFee.value,
           payment_method: bookingForm.value.paymentMethod,
           payment_status: bookingForm.value.paymentMethod === 'cod' ? 'cod' : 'pending',
           transaction_id: bookingForm.value.referenceNumber || null,
           payment_proof_url: paymentProofPath || null,
+          proof_url: paymentProofPath || null, // Also set proof_url field
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
@@ -1663,32 +1980,16 @@ export default {
           toast?.warning('Order created but payment record failed. Please contact support.')
         }
 
-        // Generate and update order barcode
-        try {
-          const barcode = generateOrderBarcode(order.id)
-          
-          const { error: barcodeError } = await supabase
-            .from('orders')
-            .update({ barcode })
-            .eq('id', order.id)
-
-          if (barcodeError) {
-            console.error('Barcode update error:', barcodeError)
-            // Don't throw error, order is still valid
-          }
-        } catch (barcodeError) {
-          console.error('Barcode generation error:', barcodeError)
-          // Continue without barcode
-        }
-
-        // Success message and cleanup
-        toast?.success(`Service booked successfully! Order #${order.id}`)
-        closeModal()
+        toast?.success('Service booked successfully!')
         
-        // Always redirect to My Orders after successful booking
-        await router.push('/my-orders')
+        // Reset form
+        resetForm()
+        
+        setTimeout(() => {
+          closeModal()
+        }, 2000)
 
-      } catch (error) {
+        } catch (error) {
         console.error('Booking submission error:', error)
         
         // Provide specific error messages
@@ -1708,6 +2009,21 @@ export default {
       } finally {
         submitting.value = false
       }
+    }
+
+    const resetForm = () => {
+      Object.keys(bookingForm.value).forEach(key => {
+        if (typeof bookingForm.value[key] === 'string') {
+          bookingForm.value[key] = key === 'zipCode' ? '5200' : ''
+        } else if (typeof bookingForm.value[key] === 'number') {
+          bookingForm.value[key] = 0
+        } else if (typeof bookingForm.value[key] === 'boolean') {
+          bookingForm.value[key] = false
+        } else {
+          bookingForm.value[key] = null
+        }
+      })
+      paymentProofPreview.value = null
     }
 
     const updateRestaurantAddress = () => {
@@ -1754,6 +2070,9 @@ export default {
         if (address) {
           bookingForm.value.restaurantAddress = address
         }
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
 
       restaurantMap.value.addListener('click', (event) => {
@@ -1764,6 +2083,9 @@ export default {
             bookingForm.value.restaurantAddress = address
           }
         })
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
     }
 
@@ -1866,6 +2188,10 @@ export default {
         if (address) {
           bookingForm.value.pickupAddress = address
         }
+        // Update route when pickup location changes
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
 
       pickupMap.value.addListener('click', (event) => {
@@ -1876,6 +2202,10 @@ export default {
             bookingForm.value.pickupAddress = address
           }
         })
+        // Update route when pickup map is clicked
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
     }
 
@@ -1979,6 +2309,10 @@ export default {
         if (address) {
           bookingForm.value.giftStoreAddress = address
         }
+        // Update route when gift store location changes
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
 
       giftStoreMap.value.addListener('click', (event) => {
@@ -1989,6 +2323,10 @@ export default {
             bookingForm.value.giftStoreAddress = address
           }
         })
+        // Update route when gift store map is clicked
+        if (showRoute.value) {
+          calculateAndDisplayRoute()
+        }
       })
     }
 
@@ -2057,7 +2395,19 @@ export default {
     }
 
     // Load Google Maps API
-    onMounted(() => {
+    onMounted(async () => {
+      console.log('[v0] Component mounted, loading pricing configs...')
+      await loadServicePricingConfigs()
+  
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'dynamicPricing' || e.key?.startsWith('pricing_')) {
+          console.log('[v0] Pricing data changed in localStorage, refreshing...')
+          refreshPricingData()
+        }
+      })
+  
+      setInterval(refreshPricingData, 30000)
+  
       if (!window.google && import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
         const script = document.createElement('script')
         script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY}&libraries=places&region=PH`
@@ -2067,6 +2417,33 @@ export default {
       }
     })
 
+    const calculateDeliveryFee = async () => {
+      // Fee is now simply calculated as routeDistance * 10 pesos per km
+      // This is handled by the deliveryFee computed property
+    }
+
+    const calculatePrice = async () => {
+      // Fee is now simply calculated as routeDistance * 10 pesos per km
+      // This is handled by the deliveryFee computed property
+    }
+
+    const routeDistance = ref(0)
+    const routeDuration = ref('')
+
+    const updateRouteInfo = (distance, duration) => {
+      routeDistance.value = distance
+      routeDuration.value = duration
+    }
+
+    const calculateAndDisplayRouteInfo = calculateAndDisplayRoute
+
+    watch([userLocation, restaurantLocation, pickupLocation, selectedService], () => {
+      if (showRoute.value && (userLocation.value || restaurantLocation.value || pickupLocation.value)) {
+        calculateAndDisplayRoute()
+      }
+    }, { deep: true })
+
+    // Added distance display on map info panel
     return {
       viewMode,
       services,
@@ -2096,7 +2473,15 @@ export default {
       handlePaymentProofUpload,
       removePaymentProof,
       submitBooking,
-      updateRestaurantAddress
+      updateRestaurantAddress,
+      calculatePrice,
+      toggleRouteDisplay,
+      showRoute,
+      routeInfo,
+      calculateAndDisplayRouteInfo,
+      optimizeRouteWithWaypoints,
+      routeDistance,
+      routeDuration
     }
   }
 }

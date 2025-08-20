@@ -437,7 +437,7 @@ export default {
       const service = services.find(s => s.type === serviceType.value);
       if (service) {
         serviceDetails.value = service;
-        formData.service_id = service.id;
+        formData.service_id = service.name; // Changed from service.id to service.name
         formData.estimated_price = totalFee.value; // Initialize estimated_price
       } else {
         toast.error('Service not found.');

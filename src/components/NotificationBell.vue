@@ -76,7 +76,7 @@
             :key="notification.id"
             @click="handleNotificationClick(notification)"
             class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
-            :class="{ 'bg-blue-50 dark:bg-blue-900/20': !notification.read }"
+            :class="{ 'bg-blue-50 dark:bg-blue-900/20': !notification.is_read }"
           >
             <div class="flex items-start space-x-3">
               <!-- Notification Icon -->
@@ -110,7 +110,7 @@
                       {{ formatTime(notification.created_at) }}
                     </p>
                   </div>
-                  <div v-if="!notification.read" class="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
+                  <div v-if="!notification.is_read" class="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1"></div>
                 </div>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default {
   },
   async mounted() {
     await this.loadNotifications()
-    this.setupRealtimeSubscription()
+    await this.setupRealtimeSubscription()
     
     // Close dropdown when clicking outside
     document.addEventListener('click', this.closeDropdown)
@@ -168,7 +168,14 @@ export default {
       this.loading = true
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) {
+          console.log('❌ No authenticated user found')
+          this.notifications = []
+          this.unreadCount = 0
+          return
+        }
+
+        console.log('👤 Loading notifications for user:', user.id)
 
         const { data, error } = await supabase
           .from('notifications')
@@ -177,58 +184,82 @@ export default {
           .order('created_at', { ascending: false })
           .limit(20)
 
-        if (error) throw error
+        if (error) {
+          console.error('💥 Database error loading notifications:', error)
+          this.toast.error('Failed to load notifications: ' + error.message)
+          return
+        }
 
+        console.log('📬 Loaded notifications:', data?.length || 0, 'notifications')
         this.notifications = data || []
-        this.unreadCount = this.notifications.filter(n => !n.read).length
+        this.unreadCount = this.notifications.filter(n => !n.is_read).length
+        
+        if (this.notifications.length === 0) {
+          console.log('📭 No notifications found for user')
+        } else {
+          console.log('📬 Found', this.notifications.length, 'notifications,', this.unreadCount, 'unread')
+        }
       } catch (error) {
-        console.error('Error loading notifications:', error)
+        console.error('💥 Error loading notifications:', error)
         this.toast.error('Failed to load notifications')
       } finally {
         this.loading = false
       }
     },
-    setupRealtimeSubscription() {
-      const { data: { user } } = supabase.auth.getUser()
-      if (!user) return
+    async setupRealtimeSubscription() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          console.log('No user for realtime subscription')
+          return
+        }
 
-      this.subscription = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            this.notifications.unshift(payload.new)
-            if (!payload.new.read) {
-              this.unreadCount++
+        console.log('Setting up realtime subscription for user:', user.id)
+
+        this.subscription = supabase
+          .channel(`notifications-${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('New notification received:', payload.new)
+              this.notifications.unshift(payload.new)
+              if (!payload.new.is_read) {
+                this.unreadCount++
+              }
+              
+              // Show toast notification
+              this.toast.info(payload.new.title)
             }
-            
-            // Show toast notification
-            this.toast.info(payload.new.title)
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            const index = this.notifications.findIndex(n => n.id === payload.new.id)
-            if (index !== -1) {
-              this.notifications[index] = payload.new
-              this.unreadCount = this.notifications.filter(n => !n.read).length
+          )
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Notification updated:', payload.new)
+              const index = this.notifications.findIndex(n => n.id === payload.new.id)
+              if (index !== -1) {
+                this.notifications[index] = payload.new
+                this.unreadCount = this.notifications.filter(n => !n.is_read).length
+              }
             }
-          }
-        )
-        .subscribe()
+          )
+          .subscribe((status) => {
+            console.log('Subscription status:', status)
+          })
+      } catch (error) {
+        console.error('Error setting up realtime subscription:', error)
+      }
     },
     toggleNotifications() {
       this.showNotifications = !this.showNotifications
@@ -238,48 +269,87 @@ export default {
     },
     async markAllAsRead() {
       try {
+        console.log('📖 Marking all notifications as read')
+        
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
+        if (!user) {
+          console.error('❌ No authenticated user for marking all notifications as read')
+          return
+        }
+
+        const unreadNotifications = this.notifications.filter(n => !n.is_read)
+        if (unreadNotifications.length === 0) {
+          this.toast.info('No unread notifications to mark')
+          return
+        }
 
         const { error } = await supabase
           .from('notifications')
-          .update({ read: true })
+          .update({ is_read: true })
           .eq('user_id', user.id)
-          .eq('read', false)
+          .eq('is_read', false)
 
-        if (error) throw error
+        if (error) {
+          console.error('💥 Database error marking all notifications as read:', error)
+          this.toast.error('Failed to mark notifications as read: ' + error.message)
+          return
+        }
 
-        this.notifications = this.notifications.map(n => ({ ...n, read: true }))
+        console.log('✅ Successfully marked all notifications as read')
+        this.notifications = this.notifications.map(n => ({ ...n, is_read: true }))
         this.unreadCount = 0
 
         this.toast.success('All notifications marked as read')
       } catch (error) {
-        console.error('Error marking notifications as read:', error)
+        console.error('💥 Error marking all notifications as read:', error)
         this.toast.error('Failed to mark notifications as read')
       }
     },
     async handleNotificationClick(notification) {
+      console.log('🖱️ Notification clicked:', notification.id)
+      
       // Mark as read if not already read
-      if (!notification.read) {
+      if (!notification.is_read) {
         try {
+          console.log('📖 Marking notification as read:', notification.id)
+          
+          const { data: { user } } = await supabase.auth.getUser()
+          if (!user) {
+            console.error('❌ No authenticated user for marking notification as read')
+            return
+          }
+
           const { error } = await supabase
             .from('notifications')
-            .update({ read: true })
+            .update({ is_read: true })
             .eq('id', notification.id)
+            .eq('user_id', user.id) // Add user_id check for security
 
-          if (error) throw error
+          if (error) {
+            console.error('💥 Database error marking notification as read:', error)
+            this.toast.error('Failed to mark notification as read: ' + error.message)
+            return
+          }
 
-          notification.read = true
+          console.log('✅ Successfully marked notification as read')
+          notification.is_read = true
           this.unreadCount = Math.max(0, this.unreadCount - 1)
+          this.toast.success('Notification marked as read')
         } catch (error) {
-          console.error('Error marking notification as read:', error)
+          console.error('💥 Error marking notification as read:', error)
+          this.toast.error('Failed to mark notification as read')
+          return
         }
       }
 
       // Navigate to action URL if available
-      if (notification.action_url) {
+      if (notification.action_url && notification.action_url !== '/profile') {
+        console.log('🔗 Navigating to:', notification.action_url)
         this.$router.push(notification.action_url)
         this.showNotifications = false
+      } else {
+        // Show notification details in a modal or expanded view
+        this.showNotificationDetails(notification)
       }
     },
     viewAllNotifications() {
@@ -305,7 +375,7 @@ export default {
     getNotificationIconPath(type) {
       const paths = {
         'order_update': 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-        'payment': 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+        'payment': 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
         'promo': 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7',
         'system': 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
         'driver': 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
@@ -327,6 +397,23 @@ export default {
       if (diffInDays < 7) return `${diffInDays}d ago`
       
       return time.toLocaleDateString()
+    },
+    showNotificationDetails(notification) {
+      // Create a simple modal or alert to show notification details
+      const details = `
+Title: ${notification.title}
+
+Message: ${notification.message}
+
+Date: ${this.formatTime(notification.created_at)}
+
+Type: ${notification.type}
+      `
+      
+      if (confirm(details + '\n\nWould you like to go to your profile?')) {
+        this.$router.push('/profile')
+        this.showNotifications = false
+      }
     }
   }
 }

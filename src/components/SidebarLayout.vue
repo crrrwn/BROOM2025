@@ -87,7 +87,8 @@
           <div class="p-1.5 sm:p-2 rounded-lg transition-all duration-300"
                :class="$route.path === '/my-orders' ? 'bg-white/20' : 'bg-green-100 group-hover:bg-green-200'">
             <svg class="w-4 h-4 sm:w-5 sm:h-5" :class="$route.path === '/my-orders' ? 'text-white' : 'text-green-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5a2 2 0 012-2h4a2 2 0 012 2v6H8V5z"></path>
             </svg>
           </div>
           <span class="font-medium text-sm sm:text-base">My Orders</span>
@@ -148,7 +149,7 @@
           
           <div class="flex items-center space-x-2 sm:space-x-4">
             <!-- Notifications -->
-            <NotificationBell />
+            <NotificationBell ref="notificationBell" />
             
             <!-- User Avatar -->
             <div class="flex items-center space-x-2 sm:space-x-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-full px-2 sm:px-4 py-1 sm:py-2 border border-green-200">
